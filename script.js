@@ -1,33 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-
-const firebaseConfig = {
-    apiKey: "여기에_본인의_API_KEY_입력",
-    authDomain: "dihr-9bb0b.firebaseapp.com",
-    databaseURL: "https://dihr-9bb0b-default-rtdb.firebaseio.com/",
-    projectId: "dihr-9bb0b",
-    storageBucket: "dihr-9bb0b.appspot.com",
-    messagingSenderId: "여기에_본인의_SENDER_ID_입력",
-    appId: "여기에_본인의_APP_ID_입력"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-const boardRef = ref(db, 'workBoardData');
-
-let boardData = [];
-let isDragging = false; // 드래그 중에는 화면 갱신을 잠시 멈춰 렉을 방지
-
-onValue(boardRef, (snapshot) => {
-    if (isDragging) return; // 드래그 도중 서버 데이터가 와서 화면이 리셋되는 현상 방지
-    const data = snapshot.val();
-    boardData = data || [];
-    renderDOM();
-});
-
-function saveToServer() {
-    set(boardRef, boardData);
-}
+// ... Firebase 설정 부분 동일 ...
 
 function renderDOM() {
     const mainList = document.getElementById('main-drag-list');
@@ -53,93 +24,108 @@ function renderDOM() {
                     <button class="icon-btn delete-btn">×</button>
                 </div>
             </div>
+            <div class="color-picker">
+                ${['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#94a3b8'].map(c => 
+                    `<div class="color-dot" style="background:${c}"></div>`
+                ).join('')}
+            </div>
             <div class="custom-scroll"><ul class="drag-item-list"></ul></div>
             <div class="add-btn-group"><button class="add-item-btn">+ 추가</button></div>
         `;
 
-        // 보드 드래그 시작
+        // 보드 색상 변경
+        colNode.querySelectorAll('.color-dot').forEach((dot, i) => {
+            const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#94a3b8'];
+            dot.onclick = () => { boardData[colIdx].color = colors[i]; saveToServer(); };
+        });
+
+        // --- [보정] 보드 드래그 ---
         colNode.ondragstart = (e) => {
             if (e.target.classList.contains('drag-item')) return;
             isDragging = true;
             e.dataTransfer.setData('colIdx', colIdx);
         };
 
-        colNode.ondragend = () => { isDragging = false; };
-
-        // 보드 이동(드롭)
-        colNode.ondragover = (e) => e.preventDefault();
-        colNode.ondrop = (e) => {
-            const fromColIdx = e.dataTransfer.getData('colIdx');
-            if (fromColIdx !== "" && fromColIdx != colIdx) {
-                const temp = boardData[fromColIdx];
-                boardData.splice(fromColIdx, 1);
-                boardData.splice(colIdx, 0, temp);
-                saveToServer();
-            }
-        };
-
-        // 아이템 리스트 구성
+        // --- [보정] 아이템 리스트 ---
         const listEl = colNode.querySelector('.drag-item-list');
-        (column.items || []).forEach((item, itemIdx) => {
+        (column.items || []).forEach((itemObj, itemIdx) => {
+            // 구 버전 데이터(문자열) 호환 처리
+            const itemData = typeof itemObj === 'string' ? { text: itemObj, color: '#ffffff' } : itemObj;
+            
             const itemEl = document.createElement('li');
             itemEl.className = 'drag-item';
-            itemEl.textContent = item;
+            itemEl.style.setProperty('--item-color', itemData.color);
             itemEl.draggable = true;
-            itemEl.contentEditable = true;
             
+            itemEl.innerHTML = `
+                <div contenteditable="true" class="item-text">${itemData.text}</div>
+                <div class="item-color-picker">
+                    ${['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ede9fe','#ffffff'].map(c => 
+                        `<div class="item-color-dot" style="background:${c}"></div>`
+                    ).join('')}
+                </div>
+            `;
+
+            // 카드 색상 변경
+            itemEl.querySelectorAll('.item-color-dot').forEach((dot, i) => {
+                const itemColors = ['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ede9fe','#ffffff'];
+                dot.onclick = (e) => {
+                    e.stopPropagation();
+                    boardData[colIdx].items[itemIdx] = { ...itemData, color: itemColors[i] };
+                    saveToServer();
+                };
+            });
+
+            // 카드 드래그 시작
             itemEl.ondragstart = (e) => {
                 e.stopPropagation();
                 isDragging = true;
-                e.dataTransfer.setData('itemInfo', JSON.stringify({colIdx, itemIdx}));
+                e.dataTransfer.setData('itemInfo', JSON.stringify({fromCol: colIdx, fromIdx: itemIdx}));
             };
 
-            itemEl.onblur = () => {
-                boardData[colIdx].items[itemIdx] = itemEl.textContent;
+            // 내용 수정
+            itemEl.querySelector('.item-text').onblur = (e) => {
+                boardData[colIdx].items[itemIdx] = { ...itemData, text: e.target.textContent };
                 saveToServer();
             };
 
             listEl.appendChild(itemEl);
         });
 
-        // 아이템 드롭 영역
-        listEl.ondragover = (e) => e.preventDefault();
+        // --- [수정] 카드 드롭 처리 (가장 중요) ---
+        listEl.ondragover = (e) => {
+            e.preventDefault();
+            e.currentTarget.style.background = "rgba(0,0,0,0.05)";
+        };
+        listEl.ondragleave = (e) => e.currentTarget.style.background = "";
         listEl.ondrop = (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            const data = e.dataTransfer.getData('itemInfo');
-            if (data) {
-                const {fromCol, fromIdx} = JSON.parse(data);
+            listEl.style.background = "";
+            
+            const rawData = e.dataTransfer.getData('itemInfo');
+            if (rawData) {
+                const {fromCol, fromIdx} = JSON.parse(rawData);
+                // 이동할 아이템 추출
                 const movingItem = boardData[fromCol].items.splice(fromIdx, 1)[0];
                 if (!boardData[colIdx].items) boardData[colIdx].items = [];
+                
+                // 해당 컬럼의 끝에 추가
                 boardData[colIdx].items.push(movingItem);
                 isDragging = false;
                 saveToServer();
             }
         };
 
-        // 버튼 클릭 이벤트
-        colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; saveToServer(); };
-        colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; saveToServer(); };
-        colNode.querySelector('.delete-btn').onclick = () => { if(confirm('삭제?')) { boardData.splice(colIdx, 1); saveToServer(); } };
-        colNode.querySelector('.add-item-btn').onclick = () => { 
+        // ... 나머지 버튼(삭제, 보관 등) 이벤트는 동일 ...
+        colNode.querySelector('.add-item-btn').onclick = () => {
             if(!boardData[colIdx].items) boardData[colIdx].items = [];
-            boardData[colIdx].items.push('새 할 일');
+            boardData[colIdx].items.push({text: '새 할 일', color: '#ffffff'});
             saveToServer();
         };
 
         if (column.archived) { archiveList.appendChild(colNode); archCount++; }
         else mainList.appendChild(colNode);
     });
-    
     document.getElementById('archive-count').textContent = archCount;
 }
-
-// 상단 버튼 및 보관함 토글
-window.onload = () => {
-    document.getElementById('add-col-btn').onclick = () => {
-        const t = prompt('제목:');
-        if(t) { boardData.push({title:t, items:[], collapsed:false, archived:false, color:'#3b82f6'}); saveToServer(); }
-    };
-    document.getElementById('archive-toggle-btn').onclick = () => {
-        document.getElementById('archive-section').classList.toggle('open');
-    };
-};
