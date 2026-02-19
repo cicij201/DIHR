@@ -86,3 +86,18 @@ body {
 
 /* 드래그 오버 상태 */
 .drag-item-list.over { background-color: rgba(37, 99, 235, 0.1); border-radius: 8px; }
+
+.drag-column {
+    cursor: default; /* 헤더에서 드래그하도록 설정할 수 있음 */
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* 드래그 중인 컬럼 투명도 조절 */
+.drag-column.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+.header {
+    cursor: move; /* 보드 자체를 이동할 수 있다는 시각적 표시 */
+}
