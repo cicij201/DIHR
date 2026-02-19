@@ -1,4 +1,49 @@
-// ... Firebase 설정 부분 동일 ...
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// 1. Firebase 콘솔에서 복사한 본인의 설정값을 여기에 넣으세요
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "dihr-9bb0b.firebaseapp.com",
+    databaseURL: "https://dihr-9bb0b-default-rtdb.firebaseio.com/",
+    projectId: "dihr-9bb0b",
+    storageBucket: "dihr-9bb0b.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const boardRef = ref(db, 'workBoardData');
+
+let boardData = [];
+let isDragging = false; // 드래그 중 서버 데이터 업데이트 방지
+
+// 2. 서버 데이터 실시간 수신
+onValue(boardRef, (snapshot) => {
+    if (isDragging) return; // 드래그 중엔 화면 리셋 금지
+    const data = snapshot.val();
+    
+    // 데이터 구조 자동 보정 (텍스트 -> 객체)
+    if (data) {
+        boardData = data.map(col => ({
+            ...col,
+            items: (col.items || []).map(item => 
+                typeof item === 'string' ? { text: item, color: '#ffffff' } : item
+            )
+        }));
+    } else {
+        boardData = []; // 데이터가 없으면 빈 배열
+    }
+    renderDOM();
+}, (error) => {
+    console.error("데이터 로드 실패:", error);
+});
+
+// 3. 서버 저장 함수
+function saveToServer() {
+    set(boardRef, boardData);
+}
 
 function renderDOM() {
     const mainList = document.getElementById('main-drag-list');
@@ -39,26 +84,33 @@ function renderDOM() {
             dot.onclick = () => { boardData[colIdx].color = colors[i]; saveToServer(); };
         });
 
-        // --- [보정] 보드 드래그 ---
+        // 보드 드래그 (이동)
         colNode.ondragstart = (e) => {
             if (e.target.classList.contains('drag-item')) return;
             isDragging = true;
             e.dataTransfer.setData('colIdx', colIdx);
         };
+        colNode.ondragend = () => { isDragging = false; };
+        colNode.ondragover = (e) => e.preventDefault();
+        colNode.ondrop = (e) => {
+            const fromColIdx = e.dataTransfer.getData('colIdx');
+            if (fromColIdx !== "" && fromColIdx != colIdx) {
+                const temp = boardData[fromColIdx];
+                boardData.splice(fromColIdx, 1);
+                boardData.splice(colIdx, 0, temp);
+                saveToServer();
+            }
+        };
 
-        // --- [보정] 아이템 리스트 ---
+        // 아이템(카드) 렌더링
         const listEl = colNode.querySelector('.drag-item-list');
-        (column.items || []).forEach((itemObj, itemIdx) => {
-            // 구 버전 데이터(문자열) 호환 처리
-            const itemData = typeof itemObj === 'string' ? { text: itemObj, color: '#ffffff' } : itemObj;
-            
+        (column.items || []).forEach((item, itemIdx) => {
             const itemEl = document.createElement('li');
             itemEl.className = 'drag-item';
-            itemEl.style.setProperty('--item-color', itemData.color);
+            itemEl.style.backgroundColor = item.color || '#ffffff';
             itemEl.draggable = true;
-            
             itemEl.innerHTML = `
-                <div contenteditable="true" class="item-text">${itemData.text}</div>
+                <div contenteditable="true" class="item-text">${item.text}</div>
                 <div class="item-color-picker">
                     ${['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ede9fe','#ffffff'].map(c => 
                         `<div class="item-color-dot" style="background:${c}"></div>`
@@ -68,10 +120,10 @@ function renderDOM() {
 
             // 카드 색상 변경
             itemEl.querySelectorAll('.item-color-dot').forEach((dot, i) => {
-                const itemColors = ['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ede9fe','#ffffff'];
+                const colors = ['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ede9fe','#ffffff'];
                 dot.onclick = (e) => {
                     e.stopPropagation();
-                    boardData[colIdx].items[itemIdx] = { ...itemData, color: itemColors[i] };
+                    boardData[colIdx].items[itemIdx].color = colors[i];
                     saveToServer();
                 };
             });
@@ -83,42 +135,35 @@ function renderDOM() {
                 e.dataTransfer.setData('itemInfo', JSON.stringify({fromCol: colIdx, fromIdx: itemIdx}));
             };
 
-            // 내용 수정
+            // 카드 내용 수정
             itemEl.querySelector('.item-text').onblur = (e) => {
-                boardData[colIdx].items[itemIdx] = { ...itemData, text: e.target.textContent };
+                boardData[colIdx].items[itemIdx].text = e.target.textContent;
                 saveToServer();
             };
 
             listEl.appendChild(itemEl);
         });
 
-        // --- [수정] 카드 드롭 처리 (가장 중요) ---
-        listEl.ondragover = (e) => {
-            e.preventDefault();
-            e.currentTarget.style.background = "rgba(0,0,0,0.05)";
-        };
-        listEl.ondragleave = (e) => e.currentTarget.style.background = "";
+        // 카드 드롭 영역
+        listEl.ondragover = (e) => e.preventDefault();
         listEl.ondrop = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            listEl.style.background = "";
-            
-            const rawData = e.dataTransfer.getData('itemInfo');
-            if (rawData) {
-                const {fromCol, fromIdx} = JSON.parse(rawData);
-                // 이동할 아이템 추출
+            e.preventDefault(); e.stopPropagation();
+            const data = e.dataTransfer.getData('itemInfo');
+            if (data) {
+                const {fromCol, fromIdx} = JSON.parse(data);
                 const movingItem = boardData[fromCol].items.splice(fromIdx, 1)[0];
                 if (!boardData[colIdx].items) boardData[colIdx].items = [];
-                
-                // 해당 컬럼의 끝에 추가
                 boardData[colIdx].items.push(movingItem);
                 isDragging = false;
                 saveToServer();
             }
         };
 
-        // ... 나머지 버튼(삭제, 보관 등) 이벤트는 동일 ...
-        colNode.querySelector('.add-item-btn').onclick = () => {
+        // 버튼 이벤트들
+        colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; saveToServer(); };
+        colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; saveToServer(); };
+        colNode.querySelector('.delete-btn').onclick = () => { if(confirm('삭제하시겠습니까?')) { boardData.splice(colIdx, 1); saveToServer(); } };
+        colNode.querySelector('.add-item-btn').onclick = () => { 
             if(!boardData[colIdx].items) boardData[colIdx].items = [];
             boardData[colIdx].items.push({text: '새 할 일', color: '#ffffff'});
             saveToServer();
@@ -129,31 +174,12 @@ function renderDOM() {
     });
     document.getElementById('archive-count').textContent = archCount;
 }
-// 서버에서 데이터 실시간 수신
-onValue(boardRef, (snapshot) => {
-    if (isDragging) return; 
-    
-    const data = snapshot.val();
-    console.log("데이터 수신 성공:", data); // 로드 여부 확인용 로그
 
-    if (data) {
-        // 기존 데이터가 있으면 로드
-        boardData = data;
-    } else {
-        // 서버에 데이터가 아예 없는 '완전 초상태'일 때 기본값 생성
-        console.log("서버가 비어있어 기본 보드를 생성합니다.");
-        boardData = [{ 
-            title: '새 프로젝트', 
-            items: [{text: '첫 번째 할 일', color: '#ffffff'}], 
-            collapsed: false, 
-            archived: false, 
-            color: '#3b82f6' 
-        }];
-        saveToServer(); // 기본값을 서버에 한 번 쏴줍니다.
-    }
-    renderDOM();
-}, (error) => {
-    // 에러 발생 시 알림 (권한 문제 등)
-    console.error("Firebase 로드 에러:", error);
-    alert("서버 연결에 실패했습니다. 설정을 확인해 주세요.");
-});
+// 상단 버튼 및 초기화
+document.getElementById('add-col-btn').onclick = () => {
+    const t = prompt('업무 보드 제목:');
+    if(t) { boardData.push({title:t, items:[], collapsed:false, archived:false, color:'#3b82f6'}); saveToServer(); }
+};
+document.getElementById('archive-toggle-btn').onclick = () => {
+    document.getElementById('archive-section').classList.toggle('open');
+};
