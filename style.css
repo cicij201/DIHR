@@ -4,7 +4,6 @@
     --bg-color: #f1f5f9;
     --column-bg: #e2e8f0;
     --item-bg: #ffffff;
-    --primary: #0f172a;
     --accent: #2563eb;
     --text: #334155;
     --danger: #ef4444;
@@ -15,10 +14,9 @@ body {
     background-color: var(--bg-color);
     font-family: 'Pretendard', sans-serif;
     color: var(--text);
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
-/* Header */
 .app-header {
     height: 60px;
     display: flex;
@@ -29,15 +27,9 @@ body {
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
-.main-title {
-    font-size: 1.25rem;
-    color: var(--primary);
-    margin: 0;
-}
-
 /* Layout */
 .drag-container {
-    height: calc(100vh - 60px);
+    height: calc(100vh - 200px);
     overflow-x: auto;
     padding: 20px;
 }
@@ -47,19 +39,35 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
-    gap: 20px;
-    height: 100%;
+    gap: 15px;
 }
 
-/* Column */
+/* Column & Collapse */
 .drag-column {
     flex: 0 0 300px;
     background-color: var(--column-bg);
     border-radius: 12px;
     display: flex;
     flex-direction: column;
-    max-height: 100%;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    transition: flex 0.3s ease, width 0.3s ease;
+    overflow: hidden;
+}
+
+/* 접혔을 때 스타일 */
+.drag-column.collapsed {
+    flex: 0 0 50px;
+    width: 50px;
+    height: 400px;
+}
+
+.drag-column.collapsed .custom-scroll, 
+.drag-column.collapsed .add-btn-group {
+    display: none;
+}
+
+.drag-column.collapsed .header h1 {
+    writing-mode: vertical-lr;
+    margin-top: 20px;
 }
 
 .header {
@@ -69,28 +77,11 @@ body {
     align-items: center;
 }
 
-.header h1 {
-    font-size: 1rem;
-    margin: 0;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: text;
-}
-
-.header h1:focus { background: white; outline: 1px solid var(--accent); }
+.header-btns { display: flex; gap: 5px; }
 
 /* Items */
-.custom-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding: 0 10px;
-}
-
-.drag-item-list {
-    min-height: 50px;
-    padding-bottom: 20px;
-}
-
+.custom-scroll { flex: 1; overflow-y: auto; padding: 0 10px; }
+.drag-item-list { min-height: 50px; padding-bottom: 20px; }
 .drag-item {
     background: var(--item-bg);
     margin-bottom: 10px;
@@ -99,41 +90,41 @@ body {
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     cursor: grab;
     font-size: 0.9rem;
-    line-height: 1.5;
-    border: 1px solid transparent;
 }
 
-.drag-item:hover { border-color: var(--accent); }
-.drag-item:focus { outline: none; background: #fff; border-color: var(--accent); }
+/* Archive Section */
+.archive-section {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background: #1e293b;
+    color: white;
+    z-index: 100;
+}
 
-.over { background-color: rgba(37, 99, 235, 0.1); border: 2px dashed var(--accent); border-radius: 8px; }
+.archive-header {
+    padding: 12px 20px;
+    cursor: pointer;
+    background: #0f172a;
+    display: flex;
+    justify-content: space-between;
+}
+
+.archive-content {
+    height: 0;
+    overflow-x: auto;
+    transition: height 0.3s ease;
+    padding: 0 20px;
+}
+
+.archive-section.open .archive-content {
+    height: 150px;
+    padding-top: 15px;
+}
 
 /* Buttons */
-.add-btn-group { padding: 10px; }
-.add-item-btn {
-    width: 100%;
-    padding: 8px;
-    background: transparent;
-    border: 1px dashed #94a3b8;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-.add-item-btn:hover { background: #f8fafc; color: var(--accent); border-color: var(--accent); }
+.primary-btn { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+.icon-btn { background: none; border: none; cursor: pointer; color: var(--text); font-size: 1rem; }
+.add-item-btn { width: 100%; padding: 8px; border: 1px dashed #94a3b8; background: transparent; cursor: pointer; border-radius: 6px; }
 
-.primary-btn {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.delete-btn { background: none; border: none; cursor: pointer; color: #94a3b8; }
-.delete-btn:hover { color: var(--danger); }
-
-/* Scrollbar */
-.custom-scroll::-webkit-scrollbar { width: 5px; }
-.custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.over { border: 2px dashed var(--accent); }
