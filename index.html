@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>업무 현황판</title>
+    <title>업무 현황 대시보드</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header class="app-header">
-        <h1 class="main-title">Business Board</h1>
+        <h1 class="main-title">Project Dashboard</h1>
         <div class="header-controls">
-            <button class="primary-btn" onclick="addNewColumn()">+ 새 단계 추가</button>
+            <button class="primary-btn" onclick="addNewColumn()">+ 새 업무(보드) 추가</button>
         </div>
     </header>
 
@@ -18,11 +18,12 @@
         <ul class="drag-list" id="main-drag-list"></ul>
     </main>
 
-    <section class="archive-section">
+    <section class="archive-section" id="archive-section">
         <div class="archive-header" onclick="toggleArchive()">
-            <span>📦 보관함 및 완료된 보드 (클릭하여 열기/닫기)</span>
+            <span>📦 업무 보관함 (클릭하여 열기/닫기)</span>
+            <span id="archive-count">0</span>
         </div>
-        <div class="archive-content" id="archive-content">
+        <div class="archive-content">
             <ul class="drag-list" id="archive-drag-list"></ul>
         </div>
     </section>
