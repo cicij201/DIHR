@@ -1,235 +1,169 @@
-const addBtns = document.querySelectorAll(".add-btn:not(.solid)");
-const saveItemBtns = document.querySelectorAll(".solid");
-const addItemContainers = document.querySelectorAll(".add-container");
-const addItems = document.querySelectorAll(".add-item");
+const mainDragList = document.getElementById('main-drag-list');
 
-// Item Lists
-const listColumns = document.querySelectorAll(".drag-item-list");
-const backlogListEl = document.getElementById("to-do-list");
-const progressListEl = document.getElementById("doing-list");
-const completeListEl = document.getElementById("done-list");
-const onHoldListEl = document.getElementById("on-hold-list");
-
-// --- 추가된 부분: 컬럼 제목 요소 ---
-const columnTitles = document.querySelectorAll(".header h1");
-
-// Items
+// 보드 데이터 구조: [{ title: '...', items: [...] }, ...]
+let boardData = [];
 let updatedOnLoad = false;
 
-// Initialize Arrays
-let backlogListArray = [];
-let progressListArray = [];
-let completeListArray = [];
-let onHoldListArray = [];
-let listArrays = [];
-// --- 추가된 부분: 제목 배열 ---
-let titleListArray = [];
+// 드래그 관련
+let draggedItem;
+let dragging = false;
+let currentColumnIndex;
 
-// Get Arrays from localStorage if available, set default values if not
+// 1. 초기 데이터 로드
 function getSavedColumns() {
-	if (localStorage.getItem("backlogItems")) {
-		backlogListArray = JSON.parse(localStorage.backlogItems);
-		progressListArray = JSON.parse(localStorage.progressItems);
-		completeListArray = JSON.parse(localStorage.completeItems);
-		onHoldListArray = JSON.parse(localStorage.onHoldItems);
-        
-        // --- 추가된 부분: 저장된 제목 불러오기 ---
-        if (localStorage.getItem("columnTitles")) {
-            titleListArray = JSON.parse(localStorage.columnTitles);
-        } else {
-            titleListArray = ["To Do", "Doing", "Done", "On Hold"];
-        }
-	} else {
-		const intro = prompt(
-			"Type 'y' (Yes) if you want to display an Editable Sample? \n(Not typing 'y' will display a plane NEW board.)"
-		);
-		if (intro === "y" || intro === "Y") {
-			backlogListArray = [
-				"Write the documentation",
-				"Post a technical article",
-			];
-			progressListArray = ["Work on Droppi project", "Listen to Spotify"];
-			completeListArray = ["Submit a PR", "Review my projects code"];
-			onHoldListArray = ["Get a girlfriend"];
-		} else {
-			backlogListArray = [];
-			progressListArray = [];
-			completeListArray = [];
-			onHoldListArray = [];
-		}
-        // 기본 제목 설정
-        titleListArray = ["To Do", "Doing", "Done", "On Hold"];
-	}
+    if (localStorage.getItem('droppiBoardData')) {
+        boardData = JSON.parse(localStorage.getItem('droppiBoardData'));
+    } else {
+        // 기본 보드 설정
+        boardData = [
+            { title: 'To Do', items: ['코드 작성하기', '문서 읽기'] },
+            { title: 'Doing', items: ['칸반 프로젝트 개발'] }
+        ];
+    }
 }
 
-// Set localStorage Arrays
+// 2. 데이터 저장
 function updateSavedColumns() {
-	listArrays = [
-		backlogListArray,
-		progressListArray,
-		completeListArray,
-		onHoldListArray,
-	];
-	const arrayNames = ["backlog", "progress", "complete", "onHold"];
-	arrayNames.forEach((arrayName, index) => {
-		localStorage.setItem(
-			`${arrayName}Items`,
-			JSON.stringify(listArrays[index])
-		);
-	});
-
-    // --- 추가된 부분: 제목 저장 ---
-    localStorage.setItem("columnTitles", JSON.stringify(titleListArray));
+    localStorage.setItem('droppiBoardData', JSON.stringify(boardData));
 }
 
-// Filter Array to remove empty values
-function filterArray(array) {
-	const filteredArray = array.filter((item) => item !== null);
-	return filteredArray;
+// 3. 컬럼 추가
+function addNewColumn() {
+    boardData.push({ title: 'New Column', items: [] });
+    updateDOM();
 }
 
-// Create DOM Elements for each list item
-function createItemEl(columnEl, column, item, index) {
-	const listEl = document.createElement("li");
-	listEl.textContent = item;
-	listEl.id = index;
-	listEl.classList.add("drag-item");
-	listEl.draggable = true;
-	listEl.setAttribute("onfocusout", `updateItem(${index}, ${column})`);
-	listEl.setAttribute("ondragstart", "drag(event)");
-	listEl.contentEditable = true;
-	columnEl.appendChild(listEl);
+// 4. 컬럼 삭제
+function deleteColumn(index) {
+    if (confirm(`'${boardData[index].title}' 컬럼을 삭제하시겠습니까?`)) {
+        boardData.splice(index, 1);
+        updateDOM();
+    }
 }
 
-// Update Columns in DOM - Reset HTML, Filter Array, Update localStorage
+// 5. 컬럼 제목 수정
+function updateTitle(index, newTitle) {
+    boardData[index].title = newTitle;
+    updateSavedColumns();
+}
+
+// 6. 아이템 엘리먼트 생성
+function createItemEl(columnEl, colIndex, itemText, itemIndex) {
+    const listEl = document.createElement('li');
+    listEl.classList.add('drag-item');
+    listEl.textContent = itemText;
+    listEl.draggable = true;
+    listEl.contentEditable = true;
+
+    // 아이템 드래그 시작
+    listEl.ondragstart = (e) => {
+        draggedItem = e.target;
+        dragging = true;
+    };
+
+    // 아이템 수정 완료
+    listEl.onblur = () => {
+        if (!listEl.textContent.trim()) {
+            boardData[colIndex].items.splice(itemIndex, 1);
+        } else {
+            boardData[colIndex].items[itemIndex] = listEl.textContent;
+        }
+        updateDOM();
+    };
+
+    columnEl.appendChild(listEl);
+}
+
+// 7. 화면 렌더링 (핵심 기능)
 function updateDOM() {
-	// Check localStorage once
-	if (!updatedOnLoad) {
-		getSavedColumns();
-	}
+    if (!updatedOnLoad) {
+        getSavedColumns();
+        updatedOnLoad = true;
+    }
+    
+    mainDragList.innerHTML = '';
 
-    // --- 추가된 부분: 화면에 제목 반영 및 수정 이벤트 연결 ---
-    columnTitles.forEach((titleEl, index) => {
-        titleEl.textContent = titleListArray[index];
-        titleEl.contentEditable = true;
-        // 포커스가 빠질 때 저장되도록 설정
-        titleEl.onblur = () => {
-            titleListArray[index] = titleEl.textContent;
-            updateSavedColumns();
-        };
+    boardData.forEach((column, colIndex) => {
+        const colNode = document.createElement('li');
+        colNode.classList.add('drag-column');
+        colNode.innerHTML = `
+            <div class="header">
+                <h1 contenteditable="true" onblur="updateTitle(${colIndex}, this.textContent)">${column.title}</h1>
+                <button class="delete-col-btn" onclick="deleteColumn(${colIndex})">&times;</button>
+            </div>
+            <div class="custom-scroll">
+                <ul class="drag-item-list" 
+                    id="col-${colIndex}" 
+                    ondrop="drop(event, ${colIndex})" 
+                    ondragover="allowDrop(event)"
+                    ondragenter="dragEnter(${colIndex})">
+                </ul>
+            </div>
+            <div class="add-btn-group">
+                <div class="add-btn" onclick="showInput(${colIndex})">+ Add Item</div>
+                <div class="add-btn solid" style="display:none;" onclick="hideInput(${colIndex})">Save Item</div>
+            </div>
+            <div class="add-container" style="display:none;">
+                <div class="add-item" contenteditable="true"></div>
+            </div>
+        `;
+
+        mainDragList.appendChild(colNode);
+
+        // 해당 컬럼의 아이템들 생성
+        const itemListEl = document.getElementById(`col-${colIndex}`);
+        column.items.forEach((item, itemIndex) => {
+            createItemEl(itemListEl, colIndex, item, itemIndex);
+        });
     });
 
-	// Backlog Column
-	backlogListEl.textContent = "";
-	backlogListArray.forEach((backlogItem, index) => {
-		createItemEl(backlogListEl, 0, backlogItem, index);
-	});
-	backlogListArray = filterArray(backlogListArray);
+    updateSavedColumns();
+}
+
+// 아이템 입력창 제어
+function showInput(index) {
+    document.querySelectorAll('.add-btn:not(.solid)')[index].style.display = 'none';
+    document.querySelectorAll('.solid')[index].style.display = 'flex';
+    document.querySelectorAll('.add-container')[index].style.display = 'block';
+}
+
+function hideInput(index) {
+    const addContainer = document.querySelectorAll('.add-container')[index];
+    const itemText = addContainer.querySelector('.add-item').textContent;
     
-	// Progress Column
-	progressListEl.textContent = "";
-	progressListArray.forEach((progressItem, index) => {
-		createItemEl(progressListEl, 1, progressItem, index);
-	});
-	progressListArray = filterArray(progressListArray);
+    if (itemText.trim()) {
+        boardData[index].items.push(itemText);
+    }
     
-	// Complete Column
-	completeListEl.textContent = "";
-	completeListArray.forEach((completeItem, index) => {
-		createItemEl(completeListEl, 2, completeItem, index);
-	});
-	completeListArray = filterArray(completeListArray);
-    
-	// On Hold Column
-	onHoldListEl.textContent = "";
-	onHoldListArray.forEach((onHoldItem, index) => {
-		createItemEl(onHoldListEl, 3, onHoldItem, index);
-	});
-	onHoldListArray = filterArray(onHoldListArray);
-    
-	// Run getSavedColumns only once, Update Local Storage
-	updatedOnLoad = true;
-	updateSavedColumns();
+    addContainer.querySelector('.add-item').textContent = '';
+    updateDOM();
 }
 
-// Update Item - Delete if necessary, or update Array value
-function updateItem(id, column) {
-	const selectedArray = listArrays[column];
-	const selectedColumn = listColumns[column].children;
-	if (!dragging) {
-		if (!selectedColumn[id].textContent) {
-			delete selectedArray[id];
-		} else {
-			selectedArray[id] = selectedColumn[id].textContent;
-		}
-		updateDOM();
-	}
+// 드래그 앤 드롭 로직
+function allowDrop(e) { e.preventDefault(); }
+
+function dragEnter(index) {
+    currentColumnIndex = index;
+    const lists = document.querySelectorAll('.drag-item-list');
+    lists.forEach(list => list.classList.remove('over'));
+    lists[index].classList.add('over');
 }
 
-// Add to Column List, Reset Textbox
-function addToColumn(column) {
-	const itemText = addItems[column].textContent;
-	const selectedArray = listArrays[column];
-	if (itemText) { // 텍스트가 있을 때만 추가
-		selectedArray.push(itemText);
-		addItems[column].textContent = "";
-		updateDOM();
-	}
-}
-
-// Show Add Item Input Box
-function showInputBox(column) {
-	addBtns[column].style.visibility = "hidden";
-	saveItemBtns[column].style.display = "flex";
-	addItemContainers[column].style.display = "flex";
-}
-
-// Hide Item Input Box
-function hideInputBox(column) {
-	addBtns[column].style.visibility = "visible";
-	saveItemBtns[column].style.display = "none";
-	addItemContainers[column].style.display = "none";
-	addToColumn(column);
-}
-
-// Allows arrays to reflect Drag and Drop items
-function rebuildArrays() {
-	backlogListArray = Array.from(backlogListEl.children).map(i => i.textContent);
-	progressListArray = Array.from(progressListEl.children).map(i => i.textContent);
-	completeListArray = Array.from(completeListEl.children).map(i => i.textContent);
-	onHoldListArray = Array.from(onHoldListEl.children).map(i => i.textContent);
-	
-	updateDOM();
-}
-
-// When Item Enters Column Area
-function dragEnter(column) {
-	listColumns[column].classList.add("over");
-	currentColumn = column;
-}
-
-// When Item Starts Dragging
-function drag(e) {
-	draggedItem = e.target;
-	dragging = true;
-}
-
-// Column Allows for Item to Drop
-function allowDrop(e) {
-	e.preventDefault();
-}
-
-// Dropping Item in Column
 function drop(e) {
-	e.preventDefault();
-	const parent = listColumns[currentColumn];
-	listColumns.forEach((column) => {
-		column.classList.remove("over");
-	});
-	parent.appendChild(draggedItem);
-	dragging = false;
-	rebuildArrays();
+    e.preventDefault();
+    dragging = false;
+
+    // 모든 리스트에서 'over' 클래스 제거
+    document.querySelectorAll('.drag-item-list').forEach(l => l.classList.remove('over'));
+
+    // 현재 DOM 구조를 바탕으로 데이터 재구성 (Rebuild Arrays)
+    const allLists = document.querySelectorAll('.drag-item-list');
+    boardData.forEach((col, i) => {
+        boardData[i].items = Array.from(allLists[i].children).map(li => li.textContent);
+    });
+
+    updateDOM();
 }
 
-// On Load
+// 실행
 updateDOM();
