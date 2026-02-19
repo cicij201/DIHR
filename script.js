@@ -1,18 +1,37 @@
-const mainList = document.getElementById('main-drag-list');
-const archiveList = document.getElementById('archive-drag-list');
-const archiveCount = document.getElementById('archive-count');
-const archiveToggleBtn = document.getElementById('archive-toggle-btn');
-const archiveSection = document.getElementById('archive-section');
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-let boardData = JSON.parse(localStorage.getItem('bizBoardFinal')) || [
-    { title: '신규 프로젝트', items: ['일정 수립'], collapsed: false, archived: false, color: '#3b82f6' },
-    { title: '사내 업무', items: ['회의록'], collapsed: false, archived: false, color: '#10b981' }
-];
+// ★ Firebase 설정 (본인의 실제 설정값으로 교체 필수)
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "dihr-9bb0b.firebaseapp.com",
+    databaseURL: "https://dihr-9bb0b-default-rtdb.firebaseio.com/",
+    projectId: "dihr-9bb0b",
+    storageBucket: "dihr-9bb0b.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
 
-let draggedItem = null;   // {colIdx, itemIdx}
-let draggedColumn = null; // colIdx
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const boardRef = ref(db, 'workBoardData');
+
+let boardData = [];
+let draggedItem = null;
+let draggedColumn = null;
+
+// 서버에서 데이터 실시간 수신
+onValue(boardRef, (snapshot) => {
+    const data = snapshot.val();
+    boardData = data || [{ title: '협업 보드 시작', items: ['새 할 일'], collapsed: false, archived: false, color: '#3b82f6' }];
+    renderDOM();
+});
 
 function renderDOM() {
+    const mainList = document.getElementById('main-drag-list');
+    const archiveList = document.getElementById('archive-drag-list');
+    const archCountDisplay = document.getElementById('archive-count');
+    
     mainList.innerHTML = '';
     archiveList.innerHTML = '';
     let archCount = 0;
@@ -34,123 +53,69 @@ function renderDOM() {
             </div>
             <div class="color-picker">
                 ${['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#94a3b8'].map(c => 
-                    `<div class="color-dot" style="background:${c}" onclick="changeColor(${colIdx}, '${c}')"></div>`
+                    `<div class="color-dot" style="background:${c}"></div>`
                 ).join('')}
             </div>
-            <div class="custom-scroll">
-                <ul class="drag-item-list" data-col="${colIdx}"></ul>
-            </div>
-            <div class="add-btn-group">
-                <button class="add-item-btn" onclick="addItem(${colIdx})">+ 세부 할 일 추가</button>
-            </div>
+            <div class="custom-scroll"><ul class="drag-item-list"></ul></div>
+            <div class="add-btn-group"><button class="add-item-btn">+ 할 일 추가</button></div>
         `;
 
-        // 보드(컬럼) 드래그 이벤트
-        colNode.addEventListener('dragstart', (e) => {
-            if (e.target.classList.contains('drag-item')) return;
-            draggedColumn = colIdx;
-            colNode.classList.add('dragging-col');
+        // 색상 변경
+        colNode.querySelectorAll('.color-dot').forEach((dot, i) => {
+            const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6','#94a3b8'];
+            dot.onclick = () => { boardData[colIdx].color = colors[i]; saveToServer(); };
         });
 
-        colNode.addEventListener('dragover', (e) => {
+        // 컬럼 드래그 (보드 자체 이동)
+        colNode.ondragstart = (e) => { if (e.target.classList.contains('drag-item')) return; draggedColumn = colIdx; };
+        colNode.ondragover = (e) => {
             e.preventDefault();
             if (draggedColumn === null || draggedColumn === colIdx) return;
             const temp = boardData[draggedColumn];
             boardData.splice(draggedColumn, 1);
             boardData.splice(colIdx, 0, temp);
             draggedColumn = colIdx;
-            renderDOM();
-        });
+            saveToServer();
+        };
 
-        colNode.addEventListener('dragend', () => {
-            draggedColumn = null;
-            colNode.classList.remove('dragging-col');
-            saveData();
-        });
-
-        // 아이템 리스트 렌더링
-        const itemListEl = colNode.querySelector('.drag-item-list');
-        column.items.forEach((item, itemIdx) => {
+        // 아이템 렌더링 및 드래그
+        const listEl = colNode.querySelector('.drag-item-list');
+        (column.items || []).forEach((item, itemIdx) => {
             const itemEl = document.createElement('li');
             itemEl.className = 'drag-item';
             itemEl.textContent = item;
             itemEl.draggable = true;
             itemEl.contentEditable = true;
-
-            itemEl.addEventListener('dragstart', (e) => {
-                e.stopPropagation();
-                draggedItem = { colIdx, itemIdx };
-                itemEl.classList.add('dragging-item');
-            });
-
-            itemEl.addEventListener('dragend', () => {
-                draggedItem = null;
-                itemEl.classList.remove('dragging-item');
-            });
-
-            itemEl.addEventListener('blur', () => {
-                boardData[colIdx].items[itemIdx] = itemEl.textContent;
-                saveData();
-            });
-
-            itemListEl.appendChild(itemEl);
+            itemEl.ondragstart = (e) => { e.stopPropagation(); draggedItem = { fromCol: colIdx, fromIdx: itemIdx }; };
+            itemEl.onblur = () => { boardData[colIdx].items[itemIdx] = itemEl.textContent; saveToServer(); };
+            listEl.appendChild(itemEl);
         });
 
-        // 아이템 드롭 처리
-        itemListEl.addEventListener('dragover', (e) => e.preventDefault());
-        itemListEl.addEventListener('drop', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
+        listEl.ondragover = (e) => e.preventDefault();
+        listEl.ondrop = (e) => {
+            e.preventDefault(); e.stopPropagation();
             if (draggedItem) {
-                const itemValue = boardData[draggedItem.colIdx].items.splice(draggedItem.itemIdx, 1)[0];
+                const itemValue = boardData[draggedItem.fromCol].items.splice(draggedItem.fromIdx, 1)[0];
+                if (!boardData[colIdx].items) boardData[colIdx].items = [];
                 boardData[colIdx].items.push(itemValue);
                 draggedItem = null;
-                renderDOM();
+                saveToServer();
             }
-        });
-
-        // 제목 수정
-        colNode.querySelector('.col-title').onblur = (e) => {
-            boardData[colIdx].title = e.target.textContent;
-            saveData();
         };
 
         // 버튼 이벤트
-        colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; renderDOM(); };
-        colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; renderDOM(); };
-        colNode.querySelector('.delete-btn').onclick = () => { if(confirm('삭제할까요?')) { boardData.splice(colIdx, 1); renderDOM(); } };
+        colNode.querySelector('.col-title').onblur = (e) => { boardData[colIdx].title = e.target.textContent; saveToServer(); };
+        colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; saveToServer(); };
+        colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; saveToServer(); };
+        colNode.querySelector('.delete-btn').onclick = () => { if(confirm('삭제?')) { boardData.splice(colIdx, 1); saveToServer(); } };
+        colNode.querySelector('.add-item-btn').onclick = () => { if(!boardData[colIdx].items) boardData[colIdx].items = []; boardData[colIdx].items.push('새 업무'); saveToServer(); };
 
         if (column.archived) { archiveList.appendChild(colNode); archCount++; }
-        else { mainList.appendChild(colNode); }
+        else mainList.appendChild(colNode);
     });
-
-    archiveCount.textContent = archCount;
-    saveData();
+    archCountDisplay.textContent = archCount;
 }
 
-function addNewColumn() {
-    const title = prompt('업무 제목:');
-    if (title) {
-        boardData.push({ title, items: [], collapsed: false, archived: false, color: '#94a3b8' });
-        renderDOM();
-    }
-}
-
-function addItem(colIdx) {
-    boardData[colIdx].items.push('새 할 일');
-    renderDOM();
-}
-
-function changeColor(idx, color) {
-    boardData[idx].color = color;
-    renderDOM();
-}
-
-function saveData() { localStorage.setItem('bizBoardFinal', JSON.stringify(boardData)); }
-
-// 보관함 토글 (중복 실행 방지)
-archiveToggleBtn.onclick = () => {
-    archiveSection.classList.toggle('open');
-};
-
-renderDOM();
+function saveToServer() { set(boardRef, boardData); }
+document.getElementById('add-col-btn').onclick = () => { const t = prompt('업무명:'); if(t) { boardData.push({title:t, items:[], collapsed:false, archived:false}); saveToServer(); } };
+document.getElementById('archive-toggle-btn').onclick = () => archiveSection.classList.toggle('open');
