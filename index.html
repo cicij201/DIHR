@@ -1,13 +1,30 @@
 <!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Droppi</title>
-		<link rel="icon" type="image/png" href="d.png" />
-		<link rel="stylesheet" href="style.css" />
-	</head>
-	<body>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Droppi - 동적 칸반 보드</title>
+    <link rel="icon" type="image/png" href="d.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1 class="main-title">Droppi</h1>
+    
+    <div class="drag-container">
+        <ul class="drag-list" id="main-drag-list">
+            </ul>
+
+        <div class="add-column-outer">
+            <div class="add-column" onclick="addNewColumn()">
+                <span class="plus-sign">+</span>
+                <span>Add New Column</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
 		<!-- Github Corner SVG (Optional ;) ) -->
 		<a
 			href="https://https://cicij201.github.io/DIHR/"
@@ -195,6 +212,7 @@
 		<script src="script.js"></script>
 	</body>
 </html>
+
 
 
 
