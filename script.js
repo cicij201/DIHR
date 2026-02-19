@@ -1,15 +1,16 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// 1. Firebase 콘솔에서 복사한 본인의 설정값을 여기에 넣으세요
+// 1. 주신 정보를 바탕으로 설정값을 채웠습니다. 
+// apiKey와 appId만 본인 콘솔 설정에서 확인해서 마지막으로 바꿔주세요!
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
+    apiKey: "AIzaSy...", // ★ 이 부분만 본인 설정값으로 교체하세요!
     authDomain: "dihr-9bb0b.firebaseapp.com",
     databaseURL: "https://dihr-9bb0b-default-rtdb.firebaseio.com/",
     projectId: "dihr-9bb0b",
     storageBucket: "dihr-9bb0b.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    messagingSenderId: "812168331742", // 일반적인 프로젝트 ID 기반 자동생성값 예시
+    appId: "1:812168331742:web:..." // ★ 이 부분도 본인 앱 ID로 교체하세요!
 };
 
 const app = initializeApp(firebaseConfig);
@@ -17,15 +18,15 @@ const db = getDatabase(app);
 const boardRef = ref(db, 'workBoardData');
 
 let boardData = [];
-let isDragging = false; // 드래그 중 서버 데이터 업데이트 방지
+let isDragging = false;
 
-// 2. 서버 데이터 실시간 수신
+// 서버에서 데이터 실시간 수신
 onValue(boardRef, (snapshot) => {
-    if (isDragging) return; // 드래그 중엔 화면 리셋 금지
+    if (isDragging) return;
     const data = snapshot.val();
     
-    // 데이터 구조 자동 보정 (텍스트 -> 객체)
     if (data) {
+        // 데이터 구조 자동 보정 (텍스트 -> 객체)
         boardData = data.map(col => ({
             ...col,
             items: (col.items || []).map(item => 
@@ -33,14 +34,14 @@ onValue(boardRef, (snapshot) => {
             )
         }));
     } else {
-        boardData = []; // 데이터가 없으면 빈 배열
+        boardData = [];
     }
     renderDOM();
 }, (error) => {
     console.error("데이터 로드 실패:", error);
+    // 여기서 에러가 난다면 보안 규칙(Rules)이 true인지 다시 확인해야 합니다.
 });
 
-// 3. 서버 저장 함수
 function saveToServer() {
     set(boardRef, boardData);
 }
@@ -84,7 +85,7 @@ function renderDOM() {
             dot.onclick = () => { boardData[colIdx].color = colors[i]; saveToServer(); };
         });
 
-        // 보드 드래그 (이동)
+        // 보드 드래그
         colNode.ondragstart = (e) => {
             if (e.target.classList.contains('drag-item')) return;
             isDragging = true;
@@ -102,7 +103,6 @@ function renderDOM() {
             }
         };
 
-        // 아이템(카드) 렌더링
         const listEl = colNode.querySelector('.drag-item-list');
         (column.items || []).forEach((item, itemIdx) => {
             const itemEl = document.createElement('li');
@@ -118,7 +118,6 @@ function renderDOM() {
                 </div>
             `;
 
-            // 카드 색상 변경
             itemEl.querySelectorAll('.item-color-dot').forEach((dot, i) => {
                 const colors = ['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ede9fe','#ffffff'];
                 dot.onclick = (e) => {
@@ -128,14 +127,12 @@ function renderDOM() {
                 };
             });
 
-            // 카드 드래그 시작
             itemEl.ondragstart = (e) => {
                 e.stopPropagation();
                 isDragging = true;
                 e.dataTransfer.setData('itemInfo', JSON.stringify({fromCol: colIdx, fromIdx: itemIdx}));
             };
 
-            // 카드 내용 수정
             itemEl.querySelector('.item-text').onblur = (e) => {
                 boardData[colIdx].items[itemIdx].text = e.target.textContent;
                 saveToServer();
@@ -144,7 +141,6 @@ function renderDOM() {
             listEl.appendChild(itemEl);
         });
 
-        // 카드 드롭 영역
         listEl.ondragover = (e) => e.preventDefault();
         listEl.ondrop = (e) => {
             e.preventDefault(); e.stopPropagation();
@@ -159,7 +155,6 @@ function renderDOM() {
             }
         };
 
-        // 버튼 이벤트들
         colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; saveToServer(); };
         colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; saveToServer(); };
         colNode.querySelector('.delete-btn').onclick = () => { if(confirm('삭제하시겠습니까?')) { boardData.splice(colIdx, 1); saveToServer(); } };
@@ -175,7 +170,6 @@ function renderDOM() {
     document.getElementById('archive-count').textContent = archCount;
 }
 
-// 상단 버튼 및 초기화
 document.getElementById('add-col-btn').onclick = () => {
     const t = prompt('업무 보드 제목:');
     if(t) { boardData.push({title:t, items:[], collapsed:false, archived:false, color:'#3b82f6'}); saveToServer(); }
