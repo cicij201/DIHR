@@ -1,25 +1,31 @@
-const mainDragList = document.getElementById('main-drag-list');
+const mainList = document.getElementById('main-drag-list');
+const archiveList = document.getElementById('archive-drag-list');
 
-// 1. 데이터 로드 (로컬 스토리지 또는 기본값)
-let boardData = JSON.parse(localStorage.getItem('droppiProData')) || [
-    { title: '📝 업무 백로그', items: ['시장 분석 보고서', '신규 기획안 작성'] },
-    { title: '⚙️ 진행 중', items: ['메인 페이지 퍼블리싱'] },
-    { title: '✅ 완료됨', items: ['기존 버그 수정'] }
+// 데이터 로드 (collapsed: 접힘 여부, archived: 보관 여부 추가)
+let boardData = JSON.parse(localStorage.getItem('bizBoardData')) || [
+    { title: '1번', items: ['제안서 검토'], collapsed: false, archived: false },
+    { title: '2번', items: ['시스템 최적화'], collapsed: false, archived: false },
+    { title: '3번', items: ['정기 업데이트'], collapsed: false, archived: true }
 ];
 
 let draggedItem = null;
 
-// 2. 화면 그리기 (렌더링)
 function renderDOM() {
-    mainDragList.innerHTML = '';
+    mainList.innerHTML = '';
+    archiveList.innerHTML = '';
 
     boardData.forEach((column, colIdx) => {
         const colNode = document.createElement('li');
-        colNode.className = 'drag-column';
+        colNode.className = `drag-column ${column.collapsed ? 'collapsed' : ''}`;
+        
         colNode.innerHTML = `
             <div class="header">
                 <h1 contenteditable="true" onblur="updateTitle(${colIdx}, this.textContent)">${column.title}</h1>
-                <button class="delete-btn" onclick="deleteColumn(${colIdx})">×</button>
+                <div class="header-btns">
+                    <button class="icon-btn" onclick="toggleCollapse(${colIdx})">${column.collapsed ? '▶' : '▼'}</button>
+                    <button class="icon-btn" onclick="moveToArchive(${colIdx})">${column.archived ? '⬆️' : '📦'}</button>
+                    <button class="icon-btn" onclick="deleteColumn(${colIdx})">×</button>
+                </div>
             </div>
             <div class="custom-scroll">
                 <ul class="drag-item-list" id="list-${colIdx}" ondrop="drop(event, ${colIdx})" ondragover="allowDrop(event)">
@@ -33,57 +39,64 @@ function renderDOM() {
                 </ul>
             </div>
             <div class="add-btn-group">
-                <button class="add-item-btn" onclick="addItem(${colIdx})">+ 업무 추가</button>
+                <button class="add-item-btn" onclick="addItem(${colIdx})">+ 추가</button>
             </div>
         `;
-        mainDragList.appendChild(colNode);
+
+        if (column.archived) {
+            archiveList.appendChild(colNode);
+        } else {
+            mainList.appendChild(colNode);
+        }
     });
-    localStorage.setItem('droppiProData', JSON.stringify(boardData));
+    localStorage.setItem('bizBoardData', JSON.stringify(boardData));
 }
 
-// 3. 기능 함수들
+// --- 보드 제어 함수 ---
+
+function toggleCollapse(idx) {
+    boardData[idx].collapsed = !boardData[idx].collapsed;
+    renderDOM();
+}
+
+function moveToArchive(idx) {
+    boardData[idx].archived = !boardData[idx].archived;
+    renderDOM();
+}
+
+function toggleArchive() {
+    document.querySelector('.archive-section').classList.toggle('open');
+}
+
 function addNewColumn() {
-    boardData.push({ title: '새 업무 단계', items: [] });
+    boardData.push({ title: '새 업무 단계', items: [], collapsed: false, archived: false });
     renderDOM();
 }
 
 function deleteColumn(idx) {
-    if (confirm('이 단계를 삭제하시겠습니까?')) {
+    if (confirm('이 단계를 완전히 삭제할까요?')) {
         boardData.splice(idx, 1);
         renderDOM();
     }
 }
 
 function addItem(colIdx) {
-    boardData[colIdx].items.push('업무 내용을 입력하세요');
+    boardData[colIdx].items.push('업무 내용');
     renderDOM();
 }
 
-function updateTitle(idx, text) {
-    boardData[idx].title = text;
-    localStorage.setItem('droppiProData', JSON.stringify(boardData));
-}
+function updateTitle(idx, text) { boardData[idx].title = text; saveData(); }
+function updateItem(cIdx, iIdx, text) { boardData[cIdx].items[iIdx] = text; saveData(); }
+function saveData() { localStorage.setItem('bizBoardData', JSON.stringify(boardData)); }
 
-function updateItem(colIdx, itemIdx, text) {
-    if (!text.trim()) {
-        boardData[colIndex].items.splice(itemIndex, 1);
-    } else {
-        boardData[colIdx].items[itemIndex] = text;
-    }
-    localStorage.setItem('droppiProData', JSON.stringify(boardData));
-}
+// --- 드래그 앤 드롭 ---
 
-// 4. 드래그 앤 드롭 로직
-function drag(e, colIdx, itemIdx) {
-    draggedItem = { colIdx, itemIdx };
-}
-
+function drag(e, colIdx, itemIdx) { draggedItem = { colIdx, itemIdx }; }
 function allowDrop(e) { e.preventDefault(); }
-
 function drop(e, targetColIdx) {
     e.preventDefault();
     const { colIdx, itemIdx } = draggedItem;
-    const item = boardData[colIdx].items.splice(itemIndex, 1)[0];
+    const item = boardData[colIdx].items.splice(itemIdx, 1)[0];
     boardData[targetColIdx].items.push(item);
     renderDOM();
 }
