@@ -129,3 +129,31 @@ function renderDOM() {
     });
     document.getElementById('archive-count').textContent = archCount;
 }
+// 서버에서 데이터 실시간 수신
+onValue(boardRef, (snapshot) => {
+    if (isDragging) return; 
+    
+    const data = snapshot.val();
+    console.log("데이터 수신 성공:", data); // 로드 여부 확인용 로그
+
+    if (data) {
+        // 기존 데이터가 있으면 로드
+        boardData = data;
+    } else {
+        // 서버에 데이터가 아예 없는 '완전 초상태'일 때 기본값 생성
+        console.log("서버가 비어있어 기본 보드를 생성합니다.");
+        boardData = [{ 
+            title: '새 프로젝트', 
+            items: [{text: '첫 번째 할 일', color: '#ffffff'}], 
+            collapsed: false, 
+            archived: false, 
+            color: '#3b82f6' 
+        }];
+        saveToServer(); // 기본값을 서버에 한 번 쏴줍니다.
+    }
+    renderDOM();
+}, (error) => {
+    // 에러 발생 시 알림 (권한 문제 등)
+    console.error("Firebase 로드 에러:", error);
+    alert("서버 연결에 실패했습니다. 설정을 확인해 주세요.");
+});
