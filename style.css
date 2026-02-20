@@ -1,40 +1,49 @@
-/* 1. 보드들을 감싸는 전체 리스트 (ul) */
-#main-drag-list {
-    display: flex !important;
-    flex-direction: row !important; /* 무조건 가로 방향으로 시작 */
-    flex-wrap: wrap !important;     /* 자리가 없으면 아래로 넘김 */
-    align-items: flex-start !important; 
+/* 전체 레이아웃: 바둑판식 */
+.drag-list {
+    display: flex;
+    flex-wrap: wrap; /* 공간 부족 시 아래로 넘김 */
     gap: 20px;
     padding: 20px;
-    list-style: none; /* 불필요한 점(•) 제거 */
-    margin: 0;
+    list-style: none;
+    align-items: flex-start;
 }
 
-/* 2. 개별 칸반 보드 (li) */
+/* 개별 보드: 내부 스크롤 없음, 내용 따라 길어짐 */
 .drag-column {
-    flex: 0 0 320px !important; /* 너비를 320px로 고정해서 한 줄에 여러 개 배치 */
-    width: 320px !important;    /* 위 flex 설정이 안 먹힐 경우를 대비한 강제 설정 */
-    
+    flex: 0 0 320px;
     background: #ebedef;
     border-radius: 12px;
     border-top: 6px solid var(--column-color);
     display: flex;
-    flex-direction: column; /* 보드 내부 아이템들은 위아래로 나열 */
-    max-height: 80vh;
-    transition: all 0.3s ease;
+    flex-direction: column;
+    /* max-height 제거 -> 내용만큼 길어짐 */
+    transition: transform 0.2s;
+    position: relative;
 }
 
-/* 3. 보드 접혔을 때 (collapsed) */
 .drag-column.collapsed {
-    height: 60px !important;
-    min-height: 60px !important;
-    flex: 0 0 320px !important; /* 접혀도 너비는 유지해서 바둑판 모양 유지 */
+    height: 54px !important;
+    overflow: hidden;
 }
 
-/* 4. 헤더 안의 버튼들이 우측 끝에 붙게 수정 */
-.header {
+/* 카드 아이템 */
+.drag-item {
+    background: #fff;
+    padding: 12px;
+    margin: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: grab;
     display: flex;
-    justify-content: space-between; /* 제목 왼쪽, 버튼 오른쪽 */
+    justify-content: space-between;
     align-items: center;
-    padding: 10px 15px;
+}
+
+/* 색상 선택기 스타일 */
+.color-dot, .item-color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid rgba(0,0,0,0.1);
 }
