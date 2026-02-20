@@ -1,93 +1,40 @@
-:root {
-    --bg-color: #f1f5f9;
-    --column-bg: #ebedef;
-    --item-bg: #ffffff;
-}
-
-body {
-    margin: 0;
-    font-family: sans-serif;
-    background-color: var(--bg-color);
-    padding-bottom: 100px;
-}
-
-/* 메인 바둑판 배열 */
-.drag-list {
-    display: flex;
-    flex-wrap: wrap; /* 옆으로 가다가 자리가 없으면 아래로 */
+/* 1. 보드들을 감싸는 전체 리스트 (ul) */
+#main-drag-list {
+    display: flex !important;
+    flex-direction: row !important; /* 무조건 가로 방향으로 시작 */
+    flex-wrap: wrap !important;     /* 자리가 없으면 아래로 넘김 */
+    align-items: flex-start !important; 
     gap: 20px;
     padding: 20px;
-    list-style: none;
-    align-items: flex-start;
+    list-style: none; /* 불필요한 점(•) 제거 */
+    margin: 0;
 }
 
-/* 개별 보드 */
+/* 2. 개별 칸반 보드 (li) */
 .drag-column {
-    flex: 0 0 320px;
-    background: var(--column-bg);
+    flex: 0 0 320px !important; /* 너비를 320px로 고정해서 한 줄에 여러 개 배치 */
+    width: 320px !important;    /* 위 flex 설정이 안 먹힐 경우를 대비한 강제 설정 */
+    
+    background: #ebedef;
     border-radius: 12px;
     border-top: 6px solid var(--column-color);
     display: flex;
-    flex-direction: column;
+    flex-direction: column; /* 보드 내부 아이템들은 위아래로 나열 */
     max-height: 80vh;
     transition: all 0.3s ease;
 }
 
-/* 접혔을 때 높이 고정 */
+/* 3. 보드 접혔을 때 (collapsed) */
 .drag-column.collapsed {
-    height: 56px !important;
-    min-height: 56px !important;
-    overflow: hidden;
+    height: 60px !important;
+    min-height: 60px !important;
+    flex: 0 0 320px !important; /* 접혀도 너비는 유지해서 바둑판 모양 유지 */
 }
 
-/* 헤더: 제목과 버튼을 양 옆으로 쫙 찢어줌 */
+/* 4. 헤더 안의 버튼들이 우측 끝에 붙게 수정 */
 .header {
-    padding: 12px 15px;
     display: flex;
-    justify-content: space-between; 
+    justify-content: space-between; /* 제목 왼쪽, 버튼 오른쪽 */
     align-items: center;
+    padding: 10px 15px;
 }
-
-.col-title {
-    font-size: 1.1rem;
-    margin: 0;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    white-space: nowrap;
-}
-
-.header-btns {
-    display: flex;
-    gap: 5px;
-}
-
-/* 카드 리스트: 이미지에 있던 점(•) 제거 */
-.drag-item-list {
-    list-style: none; 
-    padding: 10px;
-    margin: 0;
-    min-height: 20px;
-}
-
-.drag-item {
-    background: var(--item-bg);
-    padding: 12px;
-    margin-bottom: 8px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    display: flex;
-    align-items: center;
-}
-
-/* 하단 보관함 */
-.archive-section {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: #1e293b;
-    color: white;
-    z-index: 9999;
-}
-.archive-section.open { height: 400px; }
-.archive-header { padding: 15px; cursor: pointer; display: flex; justify-content: space-between; }
