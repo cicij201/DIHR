@@ -48,10 +48,56 @@
     cursor: grab;
 }
 
-/* 업무 완료함 (하단 고정) */
+/* 업무 완료함 전체 스타일 */
 .archive-section {
     position: fixed;
     bottom: 0; left: 0; right: 0;
-    background: #1e293b;
-    z-index: 1000;
+    background: #1e293b; /* 어두운 네이비 톤 */
+    color: white;
+    z-index: 2000;
+    height: 50px; /* 닫혔을 때 높이 */
+    transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+}
+
+/* 완료함이 열렸을 때 */
+.archive-section.open {
+    height: 450px; /* 열렸을 때 높이 */
+}
+
+.archive-header {
+    height: 50px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: #0f172a;
+}
+
+.archive-content {
+    flex: 1;
+    overflow-y: auto; /* 내용이 많으면 서랍 안에서 스크롤 */
+    padding: 20px;
+    display: none; /* 닫혔을 때는 안보임 */
+}
+
+.archive-section.open .archive-content {
+    display: block;
+}
+
+/* 보관함 내부에서는 자유 배치를 풀고 나열식으로 보여줌 */
+.archive-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    list-style: none;
+    padding: 0;
+}
+
+.archive-list .drag-column {
+    position: static !important; /* 자유 좌표 무시 */
+    width: 280px;
 }
