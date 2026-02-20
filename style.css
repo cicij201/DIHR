@@ -1,56 +1,79 @@
-/* 1. 메인 컨테이너: 섹션들이 가로로 배치되도록 */
+:root { --column-color: #94a3b8; }
+
+body { background-color: #f1f5f9; font-family: sans-serif; margin: 0; }
+
+/* 메인 캔버스: 자유 배치 구역 */
 #main-drag-list {
-    display: flex;
-    align-items: flex-start; /* 보드마다 길이가 달라도 위쪽 정렬 */
-    gap: 20px;
-    padding: 20px;
-    min-height: calc(100vh - 100px);
-    overflow-x: auto; /* 섹션이 많아지면 가로 스크롤 */
+    position: relative;
+    width: 100%;
+    min-height: 3000px;
+    background-image: linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+    background-size: 350px 100%; /* 섹션 가이드 라인 */
 }
 
-/* 2. 보드(컬럼): 내부 스크롤을 없애고 아래로 늘어나게 설정 */
+/* 자유 배치 보드 */
 .drag-column {
-    flex: 0 0 300px; /* 너비 고정 */
+    position: absolute;
+    width: 300px;
     background: #ebedef;
     border-radius: 12px;
     border-top: 6px solid var(--column-color);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    /* max-height 제거 -> 업무가 많아지면 아래로 계속 늘어남 */
-    height: auto; 
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+}
+.drag-column.dragging { z-index: 1000; opacity: 0.9; }
+
+/* 접기 상태 */
+.drag-column.collapsed { height: 54px; overflow: hidden; }
+
+.header {
+    padding: 12px;
+    cursor: move;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.3);
 }
 
-/* 3. 커스텀 스크롤 영역 수정: 내부 스크롤 대신 보드 전체가 길어지도록 */
-.custom-scroll {
-    overflow: visible; /* 내부 스크롤 제거 */
+.col-title { font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 5px; }
+
+/* 카드 아이템 */
+.drag-item {
+    background: #fff;
+    margin: 8px 12px;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative;
+    cursor: grab;
 }
 
-.drag-item-list {
-    list-style: none;
-    padding: 10px;
-    margin: 0;
-    min-height: 20px; /* 비어있을 때도 드롭 가능하게 */
+.item-color-picker {
+    display: none;
+    position: absolute;
+    top: 5px; right: 5px;
+    background: white;
+    padding: 2px;
+    border-radius: 4px;
+    gap: 3px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
+.drag-item:hover .item-color-picker { display: flex; }
+.item-color-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; border: 1px solid #ddd; }
 
-/* 4. 업무 완료함(보관함) 서랍 스타일 */
+/* 하단 업무 완료함 서랍 */
 .archive-section {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     background: #1e293b;
     color: white;
-    z-index: 1000;
+    z-index: 2000;
     height: 50px;
     transition: height 0.4s ease;
 }
-
-.archive-section.open {
-    height: 300px; /* 열렸을 때 높이 */
-}
-
-#archive-drag-list {
-    display: flex;
-    gap: 15px;
-    padding: 20px;
-    overflow-x: auto;
-}
+.archive-section.open { height: 400px; }
+.archive-header { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; cursor: pointer; }
+#archive-drag-list { display: flex; gap: 15px; padding: 20px; overflow-x: auto; list-style: none; }
+#archive-drag-list .drag-column { position: static !important; flex: 0 0 280px; }
