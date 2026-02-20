@@ -1,73 +1,27 @@
-/* 메인 캔버스: 섹션 가이드 배경 추가 */
-#main-drag-list {
-    position: relative;
-    width: 100%;
-    min-height: 3000px;
-    /* 이미지처럼 섹션 구분선을 배경으로 만듦 */
-    background-image: 
-        linear-gradient(90deg, #e2e8f0 2px, transparent 2px);
-    background-size: 350px 100%; /* 섹션 하나의 너비를 350px로 설정 */
-    background-color: #f8fafc;
-    display: block;
-    margin: 0; padding: 0;
-}
-
-/* 섹션 제목 레이어 (배경 위에 글씨만 띄움) */
-.section-guide-label {
-    position: absolute;
-    top: 10px;
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #94a3b8;
-    pointer-events: none; /* 클릭 방해 금지 */
-    padding-left: 15px;
-}
-
-/* 보드 스타일 (기존 자유배치 설정 유지) */
-.drag-column {
-    position: absolute;
-    width: 320px;
-    background: rgba(235, 237, 239, 0.95); /* 배경이 살짝 비치는 느낌 */
-    border-radius: 12px;
-    border: 2px solid #cbd5e1;
-    border-top: 6px solid var(--column-color);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    z-index: 10;
-}
-
-/* 내부 스크롤 제거 (요청사항 반영) */
-.item-list {
+/* 접혔을 때의 스타일 수정 */
+.drag-column.collapsed {
+    flex: 0 0 300px; /* 너비 유지 */
+    height: 50px;    /* 높이만 축소 */
     min-height: 50px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}/* 보드 삭제 버튼 (상단 우측) */
-.col-delete-btn {
-    background: none;
-    border: none;
-    color: #94a3b8;
-    font-size: 1.2rem;
-    cursor: pointer;
-    margin-left: 5px;
-    transition: color 0.2s;
+    overflow: hidden;
 }
 
-.col-delete-btn:hover {
-    color: #ef4444; /* 마우스 올리면 빨간색 */
+.drag-column.collapsed .header {
+    border-bottom: none;
 }
 
-/* 카드 삭제 버튼 (카드 내부) */
-.item-delete-btn {
-    display: none; /* 평소엔 숨김 */
-    background: #fee2e2;
-    color: #ef4444;
-    border: none;
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-size: 0.8rem;
-    cursor: pointer;
+/* 제목이 깨지지 않게 가로 유지 */
+.drag-column.collapsed .header h1 {
+    writing-mode: horizontal-tb; 
+    text-orientation: mixed;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
-.drag-item:hover .item-delete-btn {
-    display: block; /* 카드에 마우스 올리면 삭제 버튼 나타남 */
+/* 접혔을 때 내부 숨김 */
+.drag-column.collapsed .custom-scroll,
+.drag-column.collapsed .add-btn-group,
+.drag-column.collapsed .color-picker {
+    display: none;
 }
