@@ -1,49 +1,173 @@
-/* 제목 스타일 최적화 */
-.col-title {
-    font-size: 1.1rem !important; /* 크기 고정 */
-    font-weight: 600;
-    margin: 0;
-    color: #334155;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-shrink: 1; /* 제목이 길어도 버튼을 밀어내지 않음 */
+/* 기본 테마 설정 */
+:root {
+    --bg-color: #f1f5f9;
+    --header-bg: #ffffff;
+    --primary: #3b82f6;
+    --text-main: #334155;
 }
 
-/* 보드 헤더 배치 */
-.header {
-    padding: 10px 12px;
+body {
+    margin: 0;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    background-color: var(--bg-color);
+    padding-bottom: 60px; /* 보관함 자리를 위해 하단 여백 */
+}
+
+/* 상단 헤더 */
+.app-header {
+    padding: 1rem 2rem;
+    background: var(--header-bg);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 10px 10px 0 0;
-    min-height: 40px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* 핵심: 접혔을 때의 설정 보완 */
+.main-title { font-size: 1.5rem; margin: 0; color: var(--text-main); }
+
+/* 메인 컨테이너 - 바둑판식 격자 배치 */
+.drag-list {
+    display: flex;
+    flex-wrap: wrap; /* 보드가 가득 차면 아래로 내려감 */
+    gap: 20px;
+    padding: 20px;
+    list-style: none;
+    margin: 0;
+    align-items: flex-start;
+}
+
+/* 개별 보드 스타일 */
+.drag-column {
+    flex: 0 0 320px; /* 너비 고정 */
+    background: #e2e8f0;
+    border-radius: 12px;
+    border-top: 6px solid var(--column-color);
+    display: flex;
+    flex-direction: column;
+    max-height: 75vh;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+/* [중요] 접혔을 때 설정 */
 .drag-column.collapsed {
     height: 54px !important;
     min-height: 54px !important;
     max-height: 54px !important;
-    overflow: visible; /* 버튼 클릭을 위해 overflow 해제 */
+    overflow: visible !important; /* 버튼이 클릭되도록 함 */
 }
 
-.drag-column.collapsed .header {
-    border-bottom: none;
-}
-
-/* 접혔을 때 내용물만 숨김 */
 .drag-column.collapsed .custom-scroll,
 .drag-column.collapsed .add-btn-group,
 .drag-column.collapsed .color-picker {
     display: none !important;
 }
 
-/* 버튼 가독성 */
+/* 보드 헤더 */
+.header {
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 40px;
+}
+
+.col-title {
+    font-size: 1.05rem !important;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    flex: 1;
+}
+
+.title-text {
+    outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge {
+    background: rgba(0,0,0,0.1);
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
 .header-btns {
     display: flex;
-    gap: 4px;
-    flex-shrink: 0; /* 버튼 영역 확보 */
-    z-index: 10;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.icon-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 4px;
+    font-size: 1rem;
+    border-radius: 4px;
+}
+
+.icon-btn:hover { background: rgba(0,0,0,0.05); }
+
+/* 업무 카드 스타일 */
+.custom-scroll { overflow-y: auto; flex-grow: 1; }
+.drag-item-list { min-height: 20px; padding: 10px; list-style: none; margin: 0; }
+
+.drag-item {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: grab;
+}
+
+.item-text { outline: none; word-break: break-all; }
+
+/* 하단 업무 완료함 섹션 */
+.archive-section {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #334155;
+    color: white;
+    z-index: 2000;
+    height: 50px;
+    transition: height 0.4s ease;
+}
+
+.archive-section.open { height: 450px; }
+
+.archive-header {
+    height: 50px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: #1e293b;
+}
+
+.archive-content {
+    height: 400px;
+    overflow-y: auto;
+    display: none;
+}
+
+.archive-section.open .archive-content { display: block; }
+
+/* 공통 버튼 스타일 */
+.primary-btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
 }
