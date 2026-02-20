@@ -41,4 +41,33 @@
     list-style: none;
     padding: 0;
     margin: 0;
+}/* 보드 삭제 버튼 (상단 우측) */
+.col-delete-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-left: 5px;
+    transition: color 0.2s;
+}
+
+.col-delete-btn:hover {
+    color: #ef4444; /* 마우스 올리면 빨간색 */
+}
+
+/* 카드 삭제 버튼 (카드 내부) */
+.item-delete-btn {
+    display: none; /* 평소엔 숨김 */
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.drag-item:hover .item-delete-btn {
+    display: block; /* 카드에 마우스 올리면 삭제 버튼 나타남 */
 }
