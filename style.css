@@ -1,49 +1,57 @@
-/* 전체 레이아웃: 바둑판식 */
-.drag-list {
-    display: flex;
-    flex-wrap: wrap; /* 공간 부족 시 아래로 넘김 */
-    gap: 20px;
-    padding: 20px;
+/* 메인 캔버스: 보드들이 자유롭게 돌아다닐 공간 */
+#main-drag-list {
+    position: relative; /* 좌표 배치의 기준점 */
+    width: 100%;
+    min-height: 5000px; /* 보드가 길어지거나 아래로 내려갈 것을 대비해 충분히 길게 */
     list-style: none;
-    align-items: flex-start;
+    margin: 0;
+    padding: 0;
 }
 
-/* 개별 보드: 내부 스크롤 없음, 내용 따라 길어짐 */
+/* 개별 보드: 자유 이동형 */
 .drag-column {
-    flex: 0 0 320px;
+    position: absolute; /* [핵심] 좌표로 배치 */
+    width: 320px;
     background: #ebedef;
     border-radius: 12px;
     border-top: 6px solid var(--column-color);
     display: flex;
     flex-direction: column;
-    /* max-height 제거 -> 내용만큼 길어짐 */
-    transition: transform 0.2s;
-    position: relative;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.1s; /* 이동 시 부드러운 느낌 */
+    cursor: default;
 }
 
-.drag-column.collapsed {
-    height: 54px !important;
-    overflow: hidden;
-}
-
-/* 카드 아이템 */
-.drag-item {
-    background: #fff;
+/* 보드 헤더: 잡고 옮기는 핸들 역할 */
+.header {
+    cursor: move; /* "여기를 잡고 옮기세요" 표시 */
     padding: 12px;
-    margin: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    cursor: grab;
+    background: rgba(255,255,255,0.4);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-/* 색상 선택기 스타일 */
-.color-dot, .item-color-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 1px solid rgba(0,0,0,0.1);
+/* 접기 상태 */
+.drag-column.collapsed {
+    height: 54px !important;
+    overflow: hidden;
+}
+
+/* 카드 아이템 (내부 스크롤 없음) */
+.drag-item {
+    background: #fff;
+    padding: 12px;
+    margin: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    cursor: grab;
+}
+
+/* 업무 완료함 (하단 고정) */
+.archive-section {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #1e293b;
+    z-index: 1000;
 }
