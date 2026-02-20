@@ -1,65 +1,44 @@
-/* 전체 레이아웃: 섹션들이 가로로 나열됨 */
-.main-container {
-    display: flex;
-    align-items: flex-start;
-    gap: 30px;
-    padding: 20px;
-    overflow-x: auto; /* 섹션이 많아지면 가로 스크롤 */
-    min-height: 100vh;
+/* 메인 캔버스: 섹션 가이드 배경 추가 */
+#main-drag-list {
+    position: relative;
+    width: 100%;
+    min-height: 3000px;
+    /* 이미지처럼 섹션 구분선을 배경으로 만듦 */
+    background-image: 
+        linear-gradient(90deg, #e2e8f0 2px, transparent 2px);
+    background-size: 350px 100%; /* 섹션 하나의 너비를 350px로 설정 */
+    background-color: #f8fafc;
+    display: block;
+    margin: 0; padding: 0;
 }
 
-/* 메인 섹션 (이미지의 큰 박스) */
-.kanban-section {
-    flex: 0 0 350px; /* 섹션 너비 고정 */
-    background: #f8fafc;
-    border: 2px solid #cbd5e1;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    transition: all 0.3s ease;
+/* 섹션 제목 레이어 (배경 위에 글씨만 띄움) */
+.section-guide-label {
+    position: absolute;
+    top: 10px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #94a3b8;
+    pointer-events: none; /* 클릭 방해 금지 */
+    padding-left: 15px;
 }
 
-.section-header {
-    padding: 15px;
-    background: #e2e8f0;
-    border-bottom: 2px solid #cbd5e1;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-}
-
-.section-title {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #334155;
-}
-
-/* 섹션이 접혔을 때 */
-.kanban-section.collapsed {
-    flex: 0 0 60px;
-    height: 500px; /* 접혀도 세로 길이는 유지하거나 조정 가능 */
-}
-.kanban-section.collapsed .section-content {
-    display: none;
-}
-.kanban-section.collapsed .section-title {
-    writing-mode: vertical-rl; /* 제목을 세로로 돌림 */
-    margin-top: 20px;
-}
-
-/* 섹션 내부 보드 리스트 */
-.section-content {
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* 개별 보드 (기존 스타일 유지) */
+/* 보드 스타일 (기존 자유배치 설정 유지) */
 .drag-column {
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: absolute;
+    width: 320px;
+    background: rgba(235, 237, 239, 0.95); /* 배경이 살짝 비치는 느낌 */
+    border-radius: 12px;
+    border: 2px solid #cbd5e1;
+    border-top: 6px solid var(--column-color);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    z-index: 10;
+}
+
+/* 내부 스크롤 제거 (요청사항 반영) */
+.item-list {
+    min-height: 50px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
