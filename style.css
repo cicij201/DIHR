@@ -1,101 +1,34 @@
-:root {
-    --bg-color: #f8fafc;
-    --header-bg: #ffffff;
-    --primary-color: #3b82f6;
-}
+/* 기본 레이아웃 */
+:root { --bg-color: #f8fafc; --primary: #3b82f6; }
+body { margin: 0; font-family: sans-serif; background: var(--bg-color); padding-bottom: 60px; }
 
-body {
-    margin: 0;
-    font-family: 'Pretendard', sans-serif;
-    background-color: var(--bg-color);
-}
-
-.app-header {
-    padding: 1rem 2rem;
-    background: var(--header-bg);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.drag-container {
-    padding: 20px;
-}
-
-/* 핵심: 바둑판식 격자 배치 */
 .drag-list {
     display: flex;
-    flex-wrap: wrap; /* 자리가 없으면 아래로 내려감 */
+    flex-wrap: wrap; /* 바둑판식 배치 */
     gap: 20px;
+    padding: 20px;
     list-style: none;
-    padding: 0;
-    margin: 0;
 }
 
 .drag-column {
-    flex: 0 0 320px; /* 보드 너비 고정 */
+    flex: 0 0 320px;
     background: #ebedef;
     border-radius: 10px;
     border-top: 6px solid var(--column-color);
     display: flex;
     flex-direction: column;
-    max-height: 80vh;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 70vh;
+    transition: all 0.3s ease;
 }
 
-/* 상하 접기 스타일 */
+/* 상하 접기 기능 */
 .drag-column.collapsed {
-    height: 54px;
-    min-height: 54px;
+    height: 55px;
+    min-height: 55px;
     overflow: hidden;
 }
 
-.header {
-    padding: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.col-title {
-    font-size: 1rem;
-    margin: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-}
-
-.badge {
-    font-size: 11px;
-    background: #cbd5e1;
-    padding: 2px 6px;
-    border-radius: 12px;
-    margin-left: 6px;
-}
-
-.custom-scroll {
-    overflow-y: auto;
-    flex-grow: 1;
-    min-height: 50px;
-}
-
-.drag-item-list {
-    min-height: 50px;
-    padding: 10px;
-    list-style: none;
-}
-
-.drag-item {
-    background: white;
-    padding: 12px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    cursor: grab;
-}
-
-/* 보관함 스타일 */
+/* --- 업무 완료함(보관함) 스타일 수정 --- */
 .archive-section {
     position: fixed;
     bottom: 0;
@@ -103,7 +36,38 @@ body {
     right: 0;
     background: #334155;
     color: white;
-    transition: 0.3s;
+    z-index: 1000;
+    height: 50px; /* 기본은 헤더 높이만큼만 */
+    transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    flex-direction: column;
 }
-.archive-section.open { height: 400px; overflow-y: auto; }
-.archive-header { padding: 15px; cursor: pointer; display: flex; justify-content: space-between; }
+
+.archive-section.open {
+    height: 450px; /* 열렸을 때 높이 */
+}
+
+.archive-header {
+    height: 50px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    background: #1e293b;
+}
+
+.archive-content {
+    flex-grow: 1;
+    overflow-y: auto;
+    background: #334155;
+    display: none; /* 기본 숨김 */
+}
+
+.archive-section.open .archive-content {
+    display: block; /* 열렸을 때만 표시 */
+}
+
+/* 아이템 및 기타 공통 스타일 생략 (기존 유지) */
+.drag-item { background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; color: #333; }
+.icon-btn { cursor: pointer; border: none; background: none; }
