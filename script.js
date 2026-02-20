@@ -14,6 +14,24 @@ function renderDOM() {
         label.textContent = name;
         mainList.appendChild(label);
     });
+    // 보드 버튼 그룹에 삭제 버튼 추가
+colNode.innerHTML = `
+    <div class="header">
+        <b contenteditable="true" class="title-edit">${column.title}</b>
+        <div class="btns">
+            <button class="col-collapse-btn">▲</button>
+            <button class="col-archive-btn">📦</button>
+            <button class="col-delete-btn">×</button> </div>
+    </div>
+';
+// 삭제 버튼 클릭 이벤트
+colNode.querySelector('.col-delete-btn').onclick = (e) => {
+    e.stopPropagation(); // 드래그 이벤트 방해 금지
+    if (confirm(`'${column.title}' 보드를 삭제하시겠습니까?\n내부의 모든 업무가 사라집니다.`)) {
+        boardData.splice(colIdx, 1); // 배열에서 제거
+        saveToServer(); // 서버 저장
+    }
+};
 
     // 2. 보드 렌더링 (기존 자유배치 로직 그대로)
     boardData.forEach((column, colIdx) => {
@@ -114,3 +132,4 @@ function renderDOM() {
     // 업무 완료함 카운트 및 토글 이벤트 재연결
     updateArchiveCount();
 }
+
