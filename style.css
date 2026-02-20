@@ -1,49 +1,56 @@
-/* 접혔을 때의 스타일 수정 */
-.drag-column.collapsed {
-    flex: 0 0 300px; /* 너비 유지 */
-    height: 50px;    /* 높이만 축소 */
-    min-height: 50px;
-    overflow: hidden;
+/* 1. 메인 컨테이너: 섹션들이 가로로 배치되도록 */
+#main-drag-list {
+    display: flex;
+    align-items: flex-start; /* 보드마다 길이가 달라도 위쪽 정렬 */
+    gap: 20px;
+    padding: 20px;
+    min-height: calc(100vh - 100px);
+    overflow-x: auto; /* 섹션이 많아지면 가로 스크롤 */
 }
 
-.drag-column.collapsed .header {
-    border-bottom: none;
+/* 2. 보드(컬럼): 내부 스크롤을 없애고 아래로 늘어나게 설정 */
+.drag-column {
+    flex: 0 0 300px; /* 너비 고정 */
+    background: #ebedef;
+    border-radius: 12px;
+    border-top: 6px solid var(--column-color);
+    display: flex;
+    flex-direction: column;
+    /* max-height 제거 -> 업무가 많아지면 아래로 계속 늘어남 */
+    height: auto; 
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 제목이 깨지지 않게 가로 유지 */
-.drag-column.collapsed .header h1 {
-    writing-mode: horizontal-tb; 
-    text-orientation: mixed;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* 3. 커스텀 스크롤 영역 수정: 내부 스크롤 대신 보드 전체가 길어지도록 */
+.custom-scroll {
+    overflow: visible; /* 내부 스크롤 제거 */
 }
 
-/* 접혔을 때 내부 숨김 */
-.drag-column.collapsed .custom-scroll,
-.drag-column.collapsed .add-btn-group,
-.drag-column.collapsed .color-picker {
-    display: none;
-}
-/* ... 기존 스타일 유지 ... */
-
-/* 카드별 색상 스타일 */
-.drag-item { 
-    background: var(--item-color, #ffffff); /* 기본값 흰색 */
-    margin-bottom: 8px; padding: 12px; border-radius: 8px; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: grab; font-size: 0.9rem;
-    position: relative;
-    transition: background 0.2s ease;
+.drag-item-list {
+    list-style: none;
+    padding: 10px;
+    margin: 0;
+    min-height: 20px; /* 비어있을 때도 드롭 가능하게 */
 }
 
-/* 카드용 색상 선택기 (호버 시 표시) */
-.item-color-picker {
-    display: none;
-    position: absolute;
-    top: 5px; right: 5px;
-    background: rgba(255,255,255,0.9);
-    padding: 2px; border-radius: 4px; gap: 3px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* 4. 업무 완료함(보관함) 서랍 스타일 */
+.archive-section {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #1e293b;
+    color: white;
+    z-index: 1000;
+    height: 50px;
+    transition: height 0.4s ease;
 }
-.drag-item:hover .item-color-picker { display: flex; }
-.item-color-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
+
+.archive-section.open {
+    height: 300px; /* 열렸을 때 높이 */
+}
+
+#archive-drag-list {
+    display: flex;
+    gap: 15px;
+    padding: 20px;
+    overflow-x: auto;
+}
