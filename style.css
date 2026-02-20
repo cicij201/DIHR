@@ -1,76 +1,109 @@
-@import url("https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600&display=swap");
-
 :root {
-    --bg-color: #f1f5f9;
-    --column-bg: #e2e8f0;
-    --item-bg: #ffffff;
-    --accent: #2563eb;
+    --bg-color: #f8fafc;
+    --header-bg: #ffffff;
+    --primary-color: #3b82f6;
 }
 
-body { margin: 0; padding: 0; background-color: var(--bg-color); font-family: 'Pretendard', sans-serif; overflow: hidden; }
+body {
+    margin: 0;
+    font-family: 'Pretendard', sans-serif;
+    background-color: var(--bg-color);
+}
 
-.app-header { height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 30px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.app-header {
+    padding: 1rem 2rem;
+    background: var(--header-bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
 
-.drag-container { height: calc(100vh - 120px); overflow-x: auto; padding: 20px; display: flex; }
-.drag-list { display: flex; list-style: none; padding: 0; margin: 0; gap: 20px; align-items: flex-start; }
+.drag-container {
+    padding: 20px;
+}
 
-/* 컬럼 스타일 */
+/* 핵심: 바둑판식 격자 배치 */
+.drag-list {
+    display: flex;
+    flex-wrap: wrap; /* 자리가 없으면 아래로 내려감 */
+    gap: 20px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
 .drag-column {
-    flex: 0 0 300px; width: 300px; background-color: var(--column-bg); border-radius: 12px;
-    display: flex; flex-direction: column; max-height: 100%; transition: all 0.2s ease;
-    border-top: 8px solid var(--column-color, #94a3b8);
+    flex: 0 0 320px; /* 보드 너비 고정 */
+    background: #ebedef;
+    border-radius: 10px;
+    border-top: 6px solid var(--column-color);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* 타이틀 거꾸로 나옴 해결 */
-.drag-column.collapsed { flex: 0 0 60px; width: 60px; min-width: 60px; }
-.drag-column.collapsed .header { flex-direction: column; height: 100%; align-items: center; }
-.drag-column.collapsed .header h1 {
-    writing-mode: vertical-rl;
-    text-orientation: upright; /* 글자를 똑바로 세움 */
-    margin: 20px 0; font-size: 0.9rem; letter-spacing: 1px;
-}
-.drag-column.collapsed .custom-scroll, .drag-column.collapsed .add-btn-group, .drag-column.collapsed .color-picker { display: none; }
-
-.header { padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: move; }
-.header h1 { font-size: 1rem; margin: 0; flex: 1; cursor: text; outline: none; }
-
-.drag-item { 
-    background: var(--item-bg); margin-bottom: 8px; padding: 12px; border-radius: 8px; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: grab; font-size: 0.9rem;
+/* 상하 접기 스타일 */
+.drag-column.collapsed {
+    height: 54px;
+    min-height: 54px;
+    overflow: hidden;
 }
 
-.color-picker { display: flex; gap: 5px; padding: 0 15px 10px; }
-.color-dot { width: 12px; height: 12px; border-radius: 50%; cursor: pointer; }
-
-/* 보관함 */
-.archive-section { position: fixed; bottom: 0; width: 100%; background: #1e293b; z-index: 2000; }
-.archive-header { padding: 15px 30px; background: #0f172a; color: white; display: flex; justify-content: space-between; cursor: pointer; }
-.archive-content { height: 0; overflow-x: auto; transition: height 0.3s ease; display: flex; }
-.archive-section.open .archive-content { height: 350px; padding: 20px; }
-
-.primary-btn { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; }
-.icon-btn { background: none; border: none; cursor: pointer; font-size: 1.1rem; color: #64748b; }
-.badge { background: var(--accent); padding: 2px 8px; border-radius: 10px; font-size: 0.8rem; color: white; }
-
-/* ... 기존 스타일 유지 ... */
-
-/* 카드별 색상 스타일 */
-.drag-item { 
-    background: var(--item-color, #ffffff); /* 기본값 흰색 */
-    margin-bottom: 8px; padding: 12px; border-radius: 8px; 
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1); cursor: grab; font-size: 0.9rem;
-    position: relative;
-    transition: background 0.2s ease;
+.header {
+    padding: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* 카드용 색상 선택기 (호버 시 표시) */
-.item-color-picker {
-    display: none;
-    position: absolute;
-    top: 5px; right: 5px;
-    background: rgba(255,255,255,0.9);
-    padding: 2px; border-radius: 4px; gap: 3px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.col-title {
+    font-size: 1rem;
+    margin: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
 }
-.drag-item:hover .item-color-picker { display: flex; }
-.item-color-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
+
+.badge {
+    font-size: 11px;
+    background: #cbd5e1;
+    padding: 2px 6px;
+    border-radius: 12px;
+    margin-left: 6px;
+}
+
+.custom-scroll {
+    overflow-y: auto;
+    flex-grow: 1;
+    min-height: 50px;
+}
+
+.drag-item-list {
+    min-height: 50px;
+    padding: 10px;
+    list-style: none;
+}
+
+.drag-item {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    cursor: grab;
+}
+
+/* 보관함 스타일 */
+.archive-section {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #334155;
+    color: white;
+    transition: 0.3s;
+}
+.archive-section.open { height: 400px; overflow-y: auto; }
+.archive-header { padding: 15px; cursor: pointer; display: flex; justify-content: space-between; }
