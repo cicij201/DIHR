@@ -1,70 +1,65 @@
-/* 메인 캔버스 */
-#main-drag-list {
-    position: relative;
-    width: 100%;
-    min-height: 2000px;
-    margin: 0; padding: 0;
-    list-style: none;
+/* 전체 레이아웃: 섹션들이 가로로 나열됨 */
+.main-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    padding: 20px;
+    overflow-x: auto; /* 섹션이 많아지면 가로 스크롤 */
+    min-height: 100vh;
 }
 
-/* 자유 배치 보드 */
-.drag-column {
-    position: absolute; /* 좌표 배치 */
-    width: 320px;
-    background: #ebedef;
-    border-radius: 12px;
-    border-top: 6px solid var(--column-color);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+/* 메인 섹션 (이미지의 큰 박스) */
+.kanban-section {
+    flex: 0 0 350px; /* 섹션 너비 고정 */
+    background: #f8fafc;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
     display: flex;
     flex-direction: column;
-    z-index: 10;
+    transition: all 0.3s ease;
 }
 
-/* 드래그 중인 보드를 맨 위로 */
-.drag-column.dragging {
-    z-index: 1000;
-    opacity: 0.8;
-}
-
-.header {
-    cursor: move; /* 잡고 옮기는 표시 */
-    padding: 12px;
+.section-header {
+    padding: 15px;
+    background: #e2e8f0;
+    border-bottom: 2px solid #cbd5e1;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    user-select: none;
-}
-
-/* 카드 아이템과 색상 버튼 */
-.drag-item {
-    background: #fff;
-    padding: 12px;
-    margin: 8px 12px;
-    border-radius: 8px;
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-}
-
-.item-colors {
-    display: none; /* 평소엔 숨김 */
-    gap: 4px;
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    background: white;
-    padding: 2px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-}
-
-.drag-item:hover .item-colors {
-    display: flex; /* 마우스 올리면 보임 */
-}
-
-.item-color-dot {
-    width: 10px; height: 10px;
-    border-radius: 50%;
     cursor: pointer;
-    border: 1px solid #ddd;
+}
+
+.section-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #334155;
+}
+
+/* 섹션이 접혔을 때 */
+.kanban-section.collapsed {
+    flex: 0 0 60px;
+    height: 500px; /* 접혀도 세로 길이는 유지하거나 조정 가능 */
+}
+.kanban-section.collapsed .section-content {
+    display: none;
+}
+.kanban-section.collapsed .section-title {
+    writing-mode: vertical-rl; /* 제목을 세로로 돌림 */
+    margin-top: 20px;
+}
+
+/* 섹션 내부 보드 리스트 */
+.section-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* 개별 보드 (기존 스타일 유지) */
+.drag-column {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
