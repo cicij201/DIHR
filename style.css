@@ -1,73 +1,49 @@
-/* 기본 레이아웃 */
-:root { --bg-color: #f8fafc; --primary: #3b82f6; }
-body { margin: 0; font-family: sans-serif; background: var(--bg-color); padding-bottom: 60px; }
-
-.drag-list {
-    display: flex;
-    flex-wrap: wrap; /* 바둑판식 배치 */
-    gap: 20px;
-    padding: 20px;
-    list-style: none;
-}
-
-.drag-column {
-    flex: 0 0 320px;
-    background: #ebedef;
-    border-radius: 10px;
-    border-top: 6px solid var(--column-color);
-    display: flex;
-    flex-direction: column;
-    max-height: 70vh;
-    transition: all 0.3s ease;
-}
-
-/* 상하 접기 기능 */
-.drag-column.collapsed {
-    height: 55px;
-    min-height: 55px;
+/* 제목 스타일 최적화 */
+.col-title {
+    font-size: 1.1rem !important; /* 크기 고정 */
+    font-weight: 600;
+    margin: 0;
+    color: #334155;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 1; /* 제목이 길어도 버튼을 밀어내지 않음 */
 }
 
-/* --- 업무 완료함(보관함) 스타일 수정 --- */
-.archive-section {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: #334155;
-    color: white;
-    z-index: 1000;
-    height: 50px; /* 기본은 헤더 높이만큼만 */
-    transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex;
-    flex-direction: column;
-}
-
-.archive-section.open {
-    height: 450px; /* 열렸을 때 높이 */
-}
-
-.archive-header {
-    height: 50px;
-    padding: 0 20px;
+/* 보드 헤더 배치 */
+.header {
+    padding: 10px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: pointer;
-    background: #1e293b;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 10px 10px 0 0;
+    min-height: 40px;
 }
 
-.archive-content {
-    flex-grow: 1;
-    overflow-y: auto;
-    background: #334155;
-    display: none; /* 기본 숨김 */
+/* 핵심: 접혔을 때의 설정 보완 */
+.drag-column.collapsed {
+    height: 54px !important;
+    min-height: 54px !important;
+    max-height: 54px !important;
+    overflow: visible; /* 버튼 클릭을 위해 overflow 해제 */
 }
 
-.archive-section.open .archive-content {
-    display: block; /* 열렸을 때만 표시 */
+.drag-column.collapsed .header {
+    border-bottom: none;
 }
 
-/* 아이템 및 기타 공통 스타일 생략 (기존 유지) */
-.drag-item { background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; color: #333; }
-.icon-btn { cursor: pointer; border: none; background: none; }
+/* 접혔을 때 내용물만 숨김 */
+.drag-column.collapsed .custom-scroll,
+.drag-column.collapsed .add-btn-group,
+.drag-column.collapsed .color-picker {
+    display: none !important;
+}
+
+/* 버튼 가독성 */
+.header-btns {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0; /* 버튼 영역 확보 */
+    z-index: 10;
+}
