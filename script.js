@@ -141,3 +141,16 @@ document.getElementById('add-col-btn').onclick = () => {
         saveToServer();
     }
 };
+// 업무 완료함 토글 기능
+const archiveSection = document.getElementById('archive-section');
+const archiveToggleBtn = document.getElementById('archive-toggle-btn');
+const archiveHeader = document.getElementById('archive-header');
+
+// 헤더나 버튼을 누르면 열리고 닫힘
+const toggleArchive = () => {
+    archiveSection.classList.toggle('open');
+    archiveToggleBtn.textContent = archiveSection.classList.contains('open') ? '닫기' : '열기';
+};
+
+archiveToggleBtn.onclick = (e) => { e.stopPropagation(); toggleArchive(); };
+archiveHeader.onclick = toggleArchive;
