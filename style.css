@@ -1,103 +1,70 @@
-/* 메인 캔버스: 보드들이 자유롭게 돌아다닐 공간 */
+/* 메인 캔버스 */
 #main-drag-list {
-    position: relative; /* 좌표 배치의 기준점 */
+    position: relative;
     width: 100%;
-    min-height: 5000px; /* 보드가 길어지거나 아래로 내려갈 것을 대비해 충분히 길게 */
+    min-height: 2000px;
+    margin: 0; padding: 0;
     list-style: none;
-    margin: 0;
-    padding: 0;
 }
 
-/* 개별 보드: 자유 이동형 */
+/* 자유 배치 보드 */
 .drag-column {
-    position: absolute; /* [핵심] 좌표로 배치 */
+    position: absolute; /* 좌표 배치 */
     width: 320px;
     background: #ebedef;
     border-radius: 12px;
     border-top: 6px solid var(--column-color);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    transition: transform 0.1s; /* 이동 시 부드러운 느낌 */
-    cursor: default;
+    z-index: 10;
 }
 
-/* 보드 헤더: 잡고 옮기는 핸들 역할 */
+/* 드래그 중인 보드를 맨 위로 */
+.drag-column.dragging {
+    z-index: 1000;
+    opacity: 0.8;
+}
+
 .header {
-    cursor: move; /* "여기를 잡고 옮기세요" 표시 */
+    cursor: move; /* 잡고 옮기는 표시 */
     padding: 12px;
-    background: rgba(255,255,255,0.4);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    user-select: none;
 }
 
-/* 접기 상태 */
-.drag-column.collapsed {
-    height: 54px !important;
-    overflow: hidden;
-}
-
-/* 카드 아이템 (내부 스크롤 없음) */
+/* 카드 아이템과 색상 버튼 */
 .drag-item {
     background: #fff;
     padding: 12px;
-    margin: 10px;
+    margin: 8px 12px;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    cursor: grab;
-}
-
-/* 업무 완료함 전체 스타일 */
-.archive-section {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: #1e293b; /* 어두운 네이비 톤 */
-    color: white;
-    z-index: 2000;
-    height: 50px; /* 닫혔을 때 높이 */
-    transition: height 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
-}
-
-/* 완료함이 열렸을 때 */
-.archive-section.open {
-    height: 450px; /* 열렸을 때 높이 */
-}
-
-.archive-header {
-    height: 50px;
-    padding: 0 20px;
+    position: relative;
     display: flex;
     justify-content: space-between;
-    align-items: center;
+}
+
+.item-colors {
+    display: none; /* 평소엔 숨김 */
+    gap: 4px;
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    background: white;
+    padding: 2px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.drag-item:hover .item-colors {
+    display: flex; /* 마우스 올리면 보임 */
+}
+
+.item-color-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
     cursor: pointer;
-    background: #0f172a;
-}
-
-.archive-content {
-    flex: 1;
-    overflow-y: auto; /* 내용이 많으면 서랍 안에서 스크롤 */
-    padding: 20px;
-    display: none; /* 닫혔을 때는 안보임 */
-}
-
-.archive-section.open .archive-content {
-    display: block;
-}
-
-/* 보관함 내부에서는 자유 배치를 풀고 나열식으로 보여줌 */
-.archive-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    list-style: none;
-    padding: 0;
-}
-
-.archive-list .drag-column {
-    position: static !important; /* 자유 좌표 무시 */
-    width: 280px;
+    border: 1px solid #ddd;
 }
