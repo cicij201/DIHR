@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // 1. Firebase 설정
@@ -158,56 +158,7 @@ colNode.querySelector('.delete-btn').onclick = (e) => {
                     saveToServer();
                 };
             });
-// --- 카드 드롭 처리 (중간 삽입 로직 추가) ---
-listEl.ondragover = (e) => {
-    e.preventDefault();
-    // 시각적 피드백을 주고 싶다면 여기서 힌트 요소를 표시할 수 있습니다.
-};
 
-listEl.ondrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const type = e.dataTransfer.getData('type');
-    if (type === 'item') {
-        const info = JSON.parse(e.dataTransfer.getData('info'));
-        const movingItem = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
-
-        // [핵심] 마우스 위치에 따른 삽입 인덱스 계산
-        const afterElement = getDragAfterElement(listEl, e.clientY);
-        const targetItems = boardData[colIdx].items || [];
-        
-        if (afterElement == null) {
-            // 아래에 아무 카드도 없으면 맨 뒤에 추가
-            targetItems.push(movingItem);
-        } else {
-            // 특정 카드 앞에 삽입
-            const allCards = [...listEl.querySelectorAll('.drag-item')];
-            const targetIdx = allCards.indexOf(afterElement);
-            targetItems.splice(targetIdx, 0, movingItem);
-        }
-
-        boardData[colIdx].items = targetItems;
-        isDragging = false;
-        saveToServer();
-    }
-};
-
-// [도와주는 함수] 마우스 위치에서 가장 가까운 다음 카드를 찾음
-function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.drag-item:not(.dragging)')];
-
-    return draggableElements.reduce((closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2; // 카드 중앙점과의 거리 계산
-        
-        if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
-        } else {
-            return closest;
-        }
-    }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
             // 카드 개별 삭제
             itemEl.querySelector('.item-del-btn').onclick = (e) => {
                 e.stopPropagation();
@@ -216,17 +167,56 @@ function getDragAfterElement(container, y) {
             };
 
             // 카드 드래그 이동
-            itemEl.ondragstart = (e) => {
-                e.stopPropagation();
-                isDragging = true;
-                e.dataTransfer.setData('type', 'item');
-                e.dataTransfer.setData('info', JSON.stringify({fCol: colIdx, fIdx: itemIdx}));
+            // --- 카드 드롭 처리 (중간 삽입 로직 추가) ---
+            listEl.ondragover = (e) => {
+                e.preventDefault();
+    // 시각적 피드백을 주고 싶다면 여기서 힌트 요소를 표시할 수 있습니다.
             };
-            itemEl.ondragend = () => isDragging = false;
 
-            listEl.appendChild(itemEl);
-        });
+            listEl.ondrop = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+    
+                const type = e.dataTransfer.getData('type');
+                if (type === 'item') {
+                    const info = JSON.parse(e.dataTransfer.getData('info'));
+                    const movingItem = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
 
+        // [핵심] 마우스 위치에 따른 삽입 인덱스 계산
+                    const afterElement = getDragAfterElement(listEl, e.clientY);
+                    const targetItems = boardData[colIdx].items || [];
+        
+                    if (afterElement == null) {
+            // 아래에 아무 카드도 없으면 맨 뒤에 추가
+                        targetItems.push(movingItem);
+                    } else {
+            // 특정 카드 앞에 삽입
+                        const allCards = [...listEl.querySelectorAll('.drag-item')];
+                        const targetIdx = allCards.indexOf(afterElement);
+                        targetItems.splice(targetIdx, 0, movingItem);
+                    }
+
+                    boardData[colIdx].items = targetItems;
+                    isDragging = false;
+                    saveToServer();
+                }
+            };
+
+// [도와주는 함수] 마우스 위치에서 가장 가까운 다음 카드를 찾음
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.drag-item:not(.dragging)')];
+
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2; // 카드 중앙점과의 거리 계산
+        
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
         // 보드 영역에 드롭 처리 (카드 이동 및 보드 순서 이동)
         colNode.ondragover = (e) => e.preventDefault();
         colNode.ondrop = (e) => {
@@ -290,5 +280,6 @@ if (addColBtn) {
         }
     };
 }
+
 
 
