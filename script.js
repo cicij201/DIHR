@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// [설정] Firebase 연결
 const firebaseConfig = { 
     databaseURL: "https://dihr-9bb0b-default-rtdb.firebaseio.com/", 
     projectId: "dihr-9bb0b" 
@@ -26,12 +25,10 @@ onValue(boardRef, (snapshot) => {
     renderDOM();
 });
 
-// [저장] 서버로 데이터 전송
 function saveToServer() {
     set(boardRef, boardData).catch(err => console.error("저장 실패:", err));
 }
 
-// [렌더링] 메인 화면 그리기
 function renderDOM() {
     const mainList = document.getElementById('main-drag-list');
     const archiveList = document.getElementById('archive-drag-list');
@@ -43,6 +40,7 @@ function renderDOM() {
 
     boardData.forEach((column, colIdx) => {
         const colNode = document.createElement('li');
+        // [보드 토글] collapsed 상태 반영
         colNode.className = `drag-column ${column.collapsed ? 'collapsed' : ''}`;
         colNode.style.setProperty('--column-color', column.color || '#94a3b8');
         colNode.draggable = true;
@@ -62,71 +60,113 @@ function renderDOM() {
                 ).join('')}
             </div>
             <ul class="item-list" style="min-height:20px; list-style:none; padding:0;"></ul>
-            <div class="add-btn-group">
-                <button class="add-item-btn">+ 할 일 추가</button>
+            <div class="add-btn-group" style="padding:10px;">
+                <button class="add-item-btn" style="width:100%; cursor:pointer;">+ 할 일 추가</button>
             </div>
         `;
 
-        // --- 보드 이벤트 ---
-        // 보드 추가 기능 (상단 버튼 이벤트는 하단에 별도 정의)
-        
-        // 보드 제목 수정
+        // --- 보드 관련 이벤트 ---
+        // 1. 보드 제목 수정
         colNode.querySelector('.col-title').onblur = (e) => {
             boardData[colIdx].title = e.target.textContent.trim();
             saveToServer();
         };
-
-        // 보드 삭제
-        colNode.querySelector('.delete-btn').onclick = () => {
-            if (confirm('이 보드를 삭제할까요?')) {
-                boardData.splice(colIdx, 1);
-                saveToServer();
-            }
-        };
-
-        // 보드 보관/복구
-        colNode.querySelector('.archive-btn').onclick = () => {
-            boardData[colIdx].archived = !boardData[colIdx].archived;
-            saveToServer();
-        };
-
-        // 보드 접기
+        // 2. 보드 접기/펴기 (토글)
         colNode.querySelector('.collapse-btn').onclick = () => {
             boardData[colIdx].collapsed = !boardData[colIdx].collapsed;
             saveToServer();
         };
+        // 3. 보드 보관/복구
+        colNode.querySelector('.archive-btn').onclick = () => {
+            boardData[colIdx].archived = !boardData[colIdx].archived;
+            saveToServer();
+        };
+        // 4. 보드 삭제
+        colNode.querySelector('.delete-btn').onclick = () => {
+            if (confirm('보드를 영구 삭제하시겠습니까?')) {
+                boardData.splice(colIdx, 1);
+                saveToServer();
+            }
+        };
+        // 5. 보드 상단 색상 변경
+        colNode.querySelectorAll('.color-dot').forEach((dot, i) => {
+            const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6'];
+            dot.onclick = () => {
+                boardData[colIdx].color = colors[i];
+                saveToServer();
+            };
+        });
 
-        // --- 카드 추가 기능 (보드 내부) ---
+        // --- 카드 관련 이벤트 ---
+        // 6. 새 카드 추가 (누락되었던 기능)
         colNode.querySelector('.add-item-btn').onclick = () => {
             if (!boardData[colIdx].items) boardData[colIdx].items = [];
             boardData[colIdx].items.push({ text: '새 업무 내용을 입력하세요', color: '#ffffff' });
             saveToServer();
         };
 
-        // --- 카드 렌더링 및 드래그 앤 드롭 ---
         const listEl = colNode.querySelector('.item-list');
         (column.items || []).forEach((item, itemIdx) => {
             const itemEl = document.createElement('li');
             itemEl.className = 'drag-item';
+            // [카드 색상] 적용
             itemEl.style.backgroundColor = item.color || '#ffffff';
             itemEl.draggable = true;
             itemEl.innerHTML = `
-                <div contenteditable="true" class="item-text">${item.text}</div>
+                <div contenteditable="true" class="item-text" style="outline:none;">${item.text}</div>
                 <div class="item-color-picker">
                     ${['#fee2e2','#d1fae5','#dbeafe','#ffffff'].map(c => 
                         `<div class="item-color-dot" style="background:${c}"></div>`
                     ).join('')}
+                    <button class="item-del-btn" style="border:none; color:red; cursor:pointer; background:none;">×</button>
                 </div>
             `;
 
-            // 카드 수정 및 색상 변경 로직... (이전과 동일)
+            // 7. 카드 텍스트 수정
             itemEl.querySelector('.item-text').onblur = (e) => {
                 boardData[colIdx].items[itemIdx].text = e.target.textContent;
                 saveToServer();
             };
+            // 8. 카드별 색상 변경 (누락되었던 기능)
+            itemEl.querySelectorAll('.item-color-dot').forEach((dot, i) => {
+                const colors = ['#fee2e2','#d1fae5','#dbeafe','#ffffff'];
+                dot.onclick = () => {
+                    boardData[colIdx].items[itemIdx].color = colors[i];
+                    saveToServer();
+                };
+            });
+            // 9. 개별 카드 삭제
+            itemEl.querySelector('.item-del-btn').onclick = () => {
+                boardData[colIdx].items.splice(itemIdx, 1);
+                saveToServer();
+            };
+
+            // 카드 드래그 앤 드롭 로직
+            itemEl.ondragstart = (e) => {
+                e.stopPropagation();
+                isDragging = true;
+                e.dataTransfer.setData('type', 'item');
+                e.dataTransfer.setData('info', JSON.stringify({fCol: colIdx, fIdx: itemIdx}));
+            };
+            itemEl.ondragend = () => isDragging = false;
 
             listEl.appendChild(itemEl);
         });
+
+        // 보드 간 카드 드롭
+        listEl.ondragover = (e) => e.preventDefault();
+        listEl.ondrop = (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const type = e.dataTransfer.getData('type');
+            if (type === 'item') {
+                const info = JSON.parse(e.dataTransfer.getData('info'));
+                const moving = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
+                if (!boardData[colIdx].items) boardData[colIdx].items = [];
+                boardData[colIdx].items.push(moving);
+                isDragging = false; 
+                saveToServer();
+            }
+        };
 
         if (column.archived) {
             archiveList.appendChild(colNode);
@@ -138,29 +178,22 @@ function renderDOM() {
     document.getElementById('archive-count').textContent = archCount;
 }
 
-// --- 보관함 열기/닫기 토글 기능 보완 ---
-const archiveHeader = document.getElementById('archive-header');
-if (archiveHeader) {
-    archiveHeader.onclick = () => {
-        const section = document.getElementById('archive-section');
-        section.classList.toggle('open');
-    };
-}
+// 10. 보관함 토글 (서랍 열기/닫기)
+document.getElementById('archive-header').onclick = () => {
+    document.getElementById('archive-section').classList.toggle('open');
+};
 
-// --- 새 업무 보드 추가 기능 (상단 버튼) ---
-const addColBtn = document.getElementById('add-col-btn');
-if (addColBtn) {
-    addColBtn.onclick = () => {
-        const title = prompt('추가할 보드의 제목을 입력하세요:');
-        if (title && title.trim()) {
-            boardData.push({
-                title: title.trim(),
-                items: [],
-                collapsed: false,
-                archived: false,
-                color: '#94a3b8'
-            });
-            saveToServer();
-        }
-    };
-}
+// 11. 전역 새 보드 추가
+document.getElementById('add-col-btn').onclick = () => {
+    const title = prompt('추가할 보드의 제목을 입력하세요:');
+    if (title && title.trim()) {
+        boardData.push({
+            title: title.trim(),
+            items: [],
+            collapsed: false,
+            archived: false,
+            color: '#94a3b8'
+        });
+        saveToServer();
+    }
+};
