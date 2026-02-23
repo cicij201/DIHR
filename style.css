@@ -1,43 +1,34 @@
 :root { --column-color: #94a3b8; }
 
-body { background-color: #f1f5f9; font-family: sans-serif; margin: 0; }
+body { background-color: #f1f5f9; font-family: sans-serif; margin: 0; padding-bottom: 60px; }
 
-/* 메인 캔버스: 자유 배치 구역 */
+/* 메인 컨테이너: 보드들이 가로로 자동 정렬됨 */
 #main-drag-list {
-    position: relative;
-    width: 100%;
-    min-height: 3000px;
-    background-image: linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
-    background-size: 350px 100%; /* 섹션 가이드 라인 */
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
+    overflow-x: auto; /* 보드가 많아지면 옆으로 스크롤 */
+    list-style: none;
+    min-height: 80vh;
 }
 
-/* 자유 배치 보드 */
+/* 개별 보드 스타일 */
 .drag-column {
-    position: absolute;
-    width: 300px;
+    flex: 0 0 300px; /* 너비 고정 */
     background: #ebedef;
     border-radius: 12px;
     border-top: 6px solid var(--column-color);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    z-index: 10;
-}
-.drag-column.dragging { z-index: 1000; opacity: 0.9; }
-
-/* 접기 상태 */
-.drag-column.collapsed { height: 54px; overflow: hidden; }
-
-.header {
-    padding: 12px;
-    cursor: move;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: rgba(255,255,255,0.3);
 }
 
-.col-title { font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 5px; }
+/* 접혔을 때 */
+.drag-column.collapsed { height: 50px; overflow: hidden; }
+
+.header { padding: 12px; display: flex; justify-content: space-between; align-items: center; cursor: grab; }
+.col-title { font-size: 1rem; margin: 0; font-weight: bold; }
 
 /* 카드 아이템 */
 .drag-item {
@@ -51,29 +42,18 @@ body { background-color: #f1f5f9; font-family: sans-serif; margin: 0; }
 }
 
 .item-color-picker {
-    display: none;
-    position: absolute;
-    top: 5px; right: 5px;
-    background: white;
-    padding: 2px;
-    border-radius: 4px;
-    gap: 3px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: none; position: absolute; top: 5px; right: 5px;
+    background: white; padding: 2px; border-radius: 4px; gap: 3px;
 }
 .drag-item:hover .item-color-picker { display: flex; }
 .item-color-dot { width: 10px; height: 10px; border-radius: 50%; cursor: pointer; border: 1px solid #ddd; }
 
-/* 하단 업무 완료함 서랍 */
+/* 하단 업무 완료함 (서랍형 고정) */
 .archive-section {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    background: #1e293b;
-    color: white;
-    z-index: 2000;
-    height: 50px;
-    transition: height 0.4s ease;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: #1e293b; color: white; z-index: 2000;
+    height: 50px; transition: height 0.3s ease;
 }
 .archive-section.open { height: 400px; }
 .archive-header { height: 50px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; cursor: pointer; }
 #archive-drag-list { display: flex; gap: 15px; padding: 20px; overflow-x: auto; list-style: none; }
-#archive-drag-list .drag-column { position: static !important; flex: 0 0 280px; }
