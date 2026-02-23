@@ -73,10 +73,39 @@ function renderDOM() {
         titleNode.oninput = (e) => { boardData[colIdx].title = e.target.textContent; };
         titleNode.onblur = () => saveToServer();
 
-        // 보드 기능 (접기/보관/삭제)
-        colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; saveToServer(); };
-        colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; saveToServer(); };
-        colNode.querySelector('.delete-btn').onclick = () => { if(confirm('보드를 삭제할까요?')) { boardData.splice(colIdx, 1); saveToServer(); }};
+       // --- 보드 기능 버튼 (접기/보관/삭제) ---
+
+// 1. 보드 접기/펴기
+colNode.querySelector('.collapse-btn').onclick = (e) => {
+    e.stopPropagation(); // 드래그 이벤트 간섭 방지
+    boardData[colIdx].collapsed = !boardData[colIdx].collapsed;
+    saveToServer();
+};
+
+// 2. [수정 포인트] 보드 보관/복구 (📦 버튼)
+colNode.querySelector('.archive-btn').onclick = (e) => {
+    e.stopPropagation(); // 클릭 시 드래그가 시작되지 않도록 방지
+    
+    // 상태 반전 (true -> false / false -> true)
+    boardData[colIdx].archived = !boardData[colIdx].archived;
+    
+    // 복구될 때 보드가 너무 멀리 있지 않게 접힘 상태 해제 (선택 사항)
+    if (!boardData[colIdx].archived) {
+        boardData[colIdx].collapsed = false;
+    }
+    
+    saveToServer();
+    console.log(`${colIdx}번 보드 상태 변경: archived = ${boardData[colIdx].archived}`);
+};
+
+// 3. 보드 삭제
+colNode.querySelector('.delete-btn').onclick = (e) => {
+    e.stopPropagation();
+    if(confirm('보드를 영구 삭제하시겠습니까?')) {
+        boardData.splice(colIdx, 1);
+        saveToServer();
+    }
+};
         
         // 보드 색상 점 클릭
         colNode.querySelectorAll('.color-dot').forEach((dot, i) => {
@@ -212,3 +241,4 @@ if (addColBtn) {
         }
     };
 }
+
