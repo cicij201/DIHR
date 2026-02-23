@@ -4,7 +4,7 @@ import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebase
 const firebaseConfig = { databaseURL: "https://dihr-9bb0b-default-rtdb.firebaseio.com/", projectId: "dihr-9bb0b" };
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const boardRef = ref(db, 'workBoardData_free');
+const boardRef = ref(db, 'workBoardData'); // 기존 정렬형 경로 사용
 
 let boardData = [];
 let isDragging = false;
@@ -14,7 +14,6 @@ onValue(boardRef, (snapshot) => {
     const data = snapshot.val();
     boardData = data ? data.map(col => ({
         ...col,
-        x: col.x || 20, y: col.y || 20,
         items: (col.items || []).map(item => typeof item === 'string' ? { text: item, color: '#ffffff' } : item)
     })) : [];
     renderDOM();
@@ -31,11 +30,8 @@ function renderDOM() {
     boardData.forEach((column, colIdx) => {
         const colNode = document.createElement('li');
         colNode.className = `drag-column ${column.collapsed ? 'collapsed' : ''}`;
-        if(!column.archived) {
-            colNode.style.left = column.x + 'px';
-            colNode.style.top = column.y + 'px';
-        }
         colNode.style.setProperty('--column-color', column.color || '#94a3b8');
+        colNode.draggable = true;
 
         colNode.innerHTML = `
             <div class="header">
@@ -46,41 +42,28 @@ function renderDOM() {
                     <button class="delete-btn">×</button>
                 </div>
             </div>
-            <div class="color-picker" style="padding: 10px; display: flex; gap: 5px;">
+            <div class="color-picker" style="padding:0 12px 10px; display:flex; gap:5px;">
                 ${['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6'].map(c => `<div class="color-dot" style="background:${c}; width:12px; height:12px; border-radius:50%; cursor:pointer;"></div>`).join('')}
             </div>
-            <ul class="item-list" style="min-height:10px; list-style:none; padding:0;"></ul>
-            <button class="add-item-btn" style="margin:10px;">+ 업무 추가</button>
+            <ul class="item-list" style="min-height:20px; list-style:none; padding:0;"></ul>
+            <button class="add-item-btn" style="margin:10px; cursor:pointer;">+ 업무 추가</button>
         `;
 
-        // 보드 이동 (좌표 수정 버전)
-        const header = colNode.querySelector('.header');
-        header.onmousedown = (e) => {
-            if (e.target.classList.contains('col-title') || e.target.tagName === 'BUTTON') return;
-            isDragging = true;
-            colNode.classList.add('dragging');
-            const rect = colNode.getBoundingClientRect();
-            let shiftX = e.clientX - rect.left;
-            let shiftY = e.clientY - rect.top;
-
-            function moveAt(pageX, pageY) {
-                if(column.archived) return;
-                let newX = pageX - shiftX;
-                let newY = pageY - shiftY;
-                colNode.style.left = newX + 'px';
-                colNode.style.top = newY + 'px';
-                boardData[colIdx].x = newX;
-                boardData[colIdx].y = newY;
+        // 보드 순서 드래그
+        colNode.ondragstart = (e) => { 
+            if(e.target.closest('.drag-item')) return;
+            isDragging = true; e.dataTransfer.setData('type', 'col'); e.dataTransfer.setData('from', colIdx); 
+        };
+        colNode.ondragover = (e) => e.preventDefault();
+        colNode.ondrop = (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            if (type === 'col') {
+                const fromIdx = e.dataTransfer.getData('from');
+                const temp = boardData.splice(fromIdx, 1)[0];
+                boardData.splice(colIdx, 0, temp);
+                isDragging = false; saveToServer();
             }
-            const onMouseMove = (ev) => moveAt(ev.pageX, ev.pageY);
-            document.addEventListener('mousemove', onMouseMove);
-            document.onmouseup = () => {
-                document.removeEventListener('mousemove', onMouseMove);
-                isDragging = false;
-                colNode.classList.remove('dragging');
-                saveToServer();
-                document.onmouseup = null;
-            };
         };
 
         // 카드 렌더링
@@ -94,22 +77,16 @@ function renderDOM() {
                 <div contenteditable="true" class="item-text" style="outline:none;">${item.text}</div>
                 <div class="item-color-picker">
                     ${['#fee2e2','#d1fae5','#dbeafe','#ffffff'].map(c => `<div class="item-color-dot" style="background:${c}"></div>`).join('')}
-                    <button class="item-del" style="border:none; background:none; cursor:pointer; color:red;">×</button>
+                    <button class="item-del" style="border:none; color:red; cursor:pointer;">×</button>
                 </div>
             `;
-            // 카드 드래그 이동
-            itemEl.ondragstart = (e) => {
-                e.stopPropagation(); isDragging = true;
-                e.dataTransfer.setData('info', JSON.stringify({fCol: colIdx, fIdx: itemIdx}));
-            };
-            itemEl.ondragend = () => isDragging = false;
+            itemEl.ondragstart = (e) => { e.stopPropagation(); isDragging = true; e.dataTransfer.setData('type', 'item'); e.dataTransfer.setData('info', JSON.stringify({fCol: colIdx, fIdx: itemIdx})); };
             
             // 카드 색상 & 삭제
             itemEl.querySelectorAll('.item-color-dot').forEach((dot, i) => {
                 dot.onclick = () => { boardData[colIdx].items[itemIdx].color = ['#fee2e2','#d1fae5','#dbeafe','#ffffff'][i]; saveToServer(); };
             });
             itemEl.querySelector('.item-del').onclick = () => { boardData[colIdx].items.splice(itemIdx, 1); saveToServer(); };
-
             itemList.appendChild(itemEl);
         });
 
@@ -117,13 +94,16 @@ function renderDOM() {
         itemList.ondragover = (e) => e.preventDefault();
         itemList.ondrop = (e) => {
             e.preventDefault(); e.stopPropagation();
-            const info = JSON.parse(e.dataTransfer.getData('info'));
-            const moving = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
-            boardData[colIdx].items.push(moving);
-            isDragging = false; saveToServer();
+            const type = e.dataTransfer.getData('type');
+            if (type === 'item') {
+                const info = JSON.parse(e.dataTransfer.getData('info'));
+                const moving = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
+                boardData[colIdx].items.push(moving);
+                isDragging = false; saveToServer();
+            }
         };
 
-        // 보드 버튼들
+        // 버튼 이벤트
         colNode.querySelector('.collapse-btn').onclick = () => { boardData[colIdx].collapsed = !boardData[colIdx].collapsed; saveToServer(); };
         colNode.querySelector('.archive-btn').onclick = () => { boardData[colIdx].archived = !boardData[colIdx].archived; saveToServer(); };
         colNode.querySelector('.delete-btn').onclick = () => { if(confirm('삭제할까요?')) { boardData.splice(colIdx, 1); saveToServer(); } };
@@ -140,6 +120,6 @@ function renderDOM() {
 
 document.getElementById('archive-header').onclick = () => document.getElementById('archive-section').classList.toggle('open');
 document.getElementById('add-col-btn').onclick = () => {
-    const t = prompt('보드 제목:');
-    if(t) { boardData.push({title:t, items:[], x:50, y:50, archived:false}); saveToServer(); }
+    const t = prompt('새 보드 제목:');
+    if(t) { boardData.push({title:t, items:[], archived:false, collapsed:false}); saveToServer(); }
 };
