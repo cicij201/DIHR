@@ -1,4 +1,4 @@
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
 // 1. Firebase 설정
@@ -13,9 +13,9 @@ const boardRef = ref(db, 'workBoardData');
 let boardData = [];
 let isDragging = false;
 
-// 2. 서버 데이터 수신 및 실시간 동기화
+// 2. 서버 데이터 수신
 onValue(boardRef, (snapshot) => {
-    if (isDragging) return; // 드래그 중에는 화면 갱신 방지
+    if (isDragging) return;
     const data = snapshot.val();
     boardData = Array.isArray(data) ? data.map(col => ({
         ...col,
@@ -26,12 +26,11 @@ onValue(boardRef, (snapshot) => {
     renderDOM();
 });
 
-// 3. 서버 저장 함수
 function saveToServer() {
     set(boardRef, boardData).catch(err => console.error("저장 실패:", err));
 }
 
-// 4. 메인 렌더링 함수
+// 3. 메인 렌더링 함수
 function renderDOM() {
     const mainList = document.getElementById('main-drag-list');
     const archiveList = document.getElementById('archive-drag-list');
@@ -43,7 +42,6 @@ function renderDOM() {
 
     boardData.forEach((column, colIdx) => {
         const colNode = document.createElement('li');
-        // CSS 클래스 연계: 접힘 상태(.collapsed) 및 색상 변수(--column-color)
         colNode.className = `drag-column ${column.collapsed ? 'collapsed' : ''}`;
         colNode.style.setProperty('--column-color', column.color || '#94a3b8');
         colNode.draggable = true;
@@ -68,52 +66,36 @@ function renderDOM() {
             </div>
         `;
 
-        // --- 보드 헤더 이벤트 (실시간 텍스트 보존) ---
+        // --- 보드 이벤트 ---
         const titleNode = colNode.querySelector('.col-title');
         titleNode.oninput = (e) => { boardData[colIdx].title = e.target.textContent; };
         titleNode.onblur = () => saveToServer();
 
-       // --- 보드 기능 버튼 (접기/보관/삭제) ---
+        colNode.querySelector('.collapse-btn').onclick = (e) => {
+            e.stopPropagation();
+            boardData[colIdx].collapsed = !boardData[colIdx].collapsed;
+            saveToServer();
+        };
 
-// 1. 보드 접기/펴기
-colNode.querySelector('.collapse-btn').onclick = (e) => {
-    e.stopPropagation(); // 드래그 이벤트 간섭 방지
-    boardData[colIdx].collapsed = !boardData[colIdx].collapsed;
-    saveToServer();
-};
+        // [복구 버튼 수정] stopPropagation 추가
+        colNode.querySelector('.archive-btn').onclick = (e) => {
+            e.stopPropagation();
+            boardData[colIdx].archived = !boardData[colIdx].archived;
+            if (!boardData[colIdx].archived) boardData[colIdx].collapsed = false;
+            saveToServer();
+        };
 
-// 2. [수정 포인트] 보드 보관/복구 (📦 버튼)
-colNode.querySelector('.archive-btn').onclick = (e) => {
-    e.stopPropagation(); // 클릭 시 드래그가 시작되지 않도록 방지
-    
-    // 상태 반전 (true -> false / false -> true)
-    boardData[colIdx].archived = !boardData[colIdx].archived;
-    
-    // 복구될 때 보드가 너무 멀리 있지 않게 접힘 상태 해제 (선택 사항)
-    if (!boardData[colIdx].archived) {
-        boardData[colIdx].collapsed = false;
-    }
-    
-    saveToServer();
-    console.log(`${colIdx}번 보드 상태 변경: archived = ${boardData[colIdx].archived}`);
-};
+        colNode.querySelector('.delete-btn').onclick = (e) => {
+            e.stopPropagation();
+            if(confirm('보드를 삭제할까요?')) { boardData.splice(colIdx, 1); saveToServer(); }
+        };
 
-// 3. 보드 삭제
-colNode.querySelector('.delete-btn').onclick = (e) => {
-    e.stopPropagation();
-    if(confirm('보드를 영구 삭제하시겠습니까?')) {
-        boardData.splice(colIdx, 1);
-        saveToServer();
-    }
-};
-        
-        // 보드 색상 점 클릭
         colNode.querySelectorAll('.color-dot').forEach((dot, i) => {
             const colors = ['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6'];
             dot.onclick = () => { boardData[colIdx].color = colors[i]; saveToServer(); };
         });
 
-        // 보드 자체 드래그 (순서 변경)
+        // --- 보드 드래그 ---
         colNode.ondragstart = (e) => {
             if(e.target.closest('.drag-item')) return;
             isDragging = true;
@@ -121,14 +103,16 @@ colNode.querySelector('.delete-btn').onclick = (e) => {
             e.dataTransfer.setData('from', colIdx);
         };
 
-        // --- 카드(업무) 추가 이벤트 ---
+        // --- 카드 추가 ---
         colNode.querySelector('.add-item-btn').onclick = () => {
             if (!boardData[colIdx].items) boardData[colIdx].items = [];
             boardData[colIdx].items.push({ text: '새 업무를 입력하세요', color: '#ffffff' });
-            saveToServer(); // 추가 즉시 서버 저장하여 초기화 방지
+            saveToServer();
         };
 
+        // --- 카드 리스트 및 드롭 (중간 삽입 로직) ---
         const listEl = colNode.querySelector('.drag-item-list');
+        
         (column.items || []).forEach((item, itemIdx) => {
             const itemEl = document.createElement('li');
             itemEl.className = 'drag-item';
@@ -144,12 +128,16 @@ colNode.querySelector('.delete-btn').onclick = (e) => {
                 </div>
             `;
 
-            // 카드 텍스트 실시간 반영 (초기화 방지 핵심)
             const textNode = itemEl.querySelector('.item-text');
             textNode.oninput = (e) => { boardData[colIdx].items[itemIdx].text = e.target.textContent; };
             textNode.onblur = () => saveToServer();
 
-            // 카드 색상 변경
+            itemEl.querySelector('.item-del-btn').onclick = (e) => {
+                e.stopPropagation();
+                boardData[colIdx].items.splice(itemIdx, 1);
+                saveToServer();
+            };
+
             itemEl.querySelectorAll('.item-color-dot').forEach((dot, i) => {
                 const colors = ['#fee2e2','#fef3c7','#d1fae5','#dbeafe','#ffffff'];
                 dot.onclick = (e) => {
@@ -159,127 +147,96 @@ colNode.querySelector('.delete-btn').onclick = (e) => {
                 };
             });
 
-            // 카드 개별 삭제
-            itemEl.querySelector('.item-del-btn').onclick = (e) => {
+            itemEl.ondragstart = (e) => {
                 e.stopPropagation();
-                boardData[colIdx].items.splice(itemIdx, 1);
-                saveToServer();
+                isDragging = true;
+                itemEl.classList.add('dragging'); // 드래그 중인 표시
+                e.dataTransfer.setData('type', 'item');
+                e.dataTransfer.setData('info', JSON.stringify({fCol: colIdx, fIdx: itemIdx}));
+            };
+            itemEl.ondragend = () => {
+                isDragging = false;
+                itemEl.classList.remove('dragging');
             };
 
-            // 카드 드래그 이동
-            // --- 카드 드롭 처리 (중간 삽입 로직 추가) ---
-            listEl.ondragover = (e) => {
-                e.preventDefault();
-    // 시각적 피드백을 주고 싶다면 여기서 힌트 요소를 표시할 수 있습니다.
-            };
+            listEl.appendChild(itemEl);
+        });
 
-            listEl.ondrop = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-    
-                const type = e.dataTransfer.getData('type');
-                if (type === 'item') {
-                    const info = JSON.parse(e.dataTransfer.getData('info'));
-                    const movingItem = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
-
-        // [핵심] 마우스 위치에 따른 삽입 인덱스 계산
-                    const afterElement = getDragAfterElement(listEl, e.clientY);
-                    const targetItems = boardData[colIdx].items || [];
-        
-                    if (afterElement == null) {
-            // 아래에 아무 카드도 없으면 맨 뒤에 추가
-                        targetItems.push(movingItem);
-                    } else {
-            // 특정 카드 앞에 삽입
-                        const allCards = [...listEl.querySelectorAll('.drag-item')];
-                        const targetIdx = allCards.indexOf(afterElement);
-                        targetItems.splice(targetIdx, 0, movingItem);
-                    }
-
-                    boardData[colIdx].items = targetItems;
-                    isDragging = false;
-                    saveToServer();
+        // [핵심] 카드 리스트 드롭 로직
+        listEl.ondragover = (e) => { e.preventDefault(); };
+        listEl.ondrop = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const type = e.dataTransfer.getData('type');
+            
+            if (type === 'item') {
+                const info = JSON.parse(e.dataTransfer.getData('info'));
+                const movingItem = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
+                
+                // 마우스 위치에 따른 삽입 위치 계산
+                const afterElement = getDragAfterElement(listEl, e.clientY);
+                const targetItems = boardData[colIdx].items || [];
+                
+                if (afterElement == null) {
+                    targetItems.push(movingItem);
+                } else {
+                    const allCards = [...listEl.querySelectorAll('.drag-item')];
+                    const targetIdx = allCards.indexOf(afterElement);
+                    targetItems.splice(targetIdx, 0, movingItem);
                 }
-            };
-
-// [도와주는 함수] 마우스 위치에서 가장 가까운 다음 카드를 찾음
-            function getDragAfterElement(container, y) {
-                const draggableElements = [...container.querySelectorAll('.drag-item:not(.dragging)')];
-
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2; // 카드 중앙점과의 거리 계산
-        
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
+                
+                boardData[colIdx].items = targetItems;
+                isDragging = false;
+                saveToServer();
             }
-        // 보드 영역에 드롭 처리 (카드 이동 및 보드 순서 이동)
+        };
+
+        // 보드 순서 변경 드롭
         colNode.ondragover = (e) => e.preventDefault();
         colNode.ondrop = (e) => {
             e.preventDefault();
             const type = e.dataTransfer.getData('type');
-            if (type === 'item') {
-                const info = JSON.parse(e.dataTransfer.getData('info'));
-                const moving = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
-                if (!boardData[colIdx].items) boardData[colIdx].items = [];
-                boardData[colIdx].items.push(moving);
-                isDragging = false; saveToServer();
-            } else if (type === 'col') {
+            if (type === 'col') {
                 const fromIdx = e.dataTransfer.getData('from');
                 if (fromIdx !== "" && fromIdx != colIdx) {
                     const temp = boardData.splice(fromIdx, 1)[0];
                     boardData.splice(colIdx, 0, temp);
-                    isDragging = false; saveToServer();
+                    isDragging = false;
+                    saveToServer();
                 }
             }
         };
 
-        // 보관함 여부에 따라 다른 리스트에 렌더링
-        if (column.archived) {
-            archiveList.appendChild(colNode);
-            archCount++;
-        } else {
-            mainList.appendChild(colNode);
-        }
+        if (column.archived) { archiveList.appendChild(colNode); archCount++; }
+        else mainList.appendChild(colNode);
     });
     
-    // 업무 완료함 카운트 배지 업데이트
-    const countEl = document.getElementById('archive-count');
-    if (countEl) countEl.textContent = archCount;
+    document.getElementById('archive-count').textContent = archCount;
 }
 
-// 5. 전역 이벤트 리스너
-
-// [업무 완료함 열기/닫기 토글] HTML의 id="archive-toggle-btn"과 연동
-const archiveToggle = document.getElementById('archive-toggle-btn');
-if (archiveToggle) {
-    archiveToggle.onclick = () => {
-        const section = document.getElementById('archive-section');
-        section.classList.toggle('open');
-    };
-}
-
-// [새 업무 보드 추가] HTML의 id="add-col-btn"과 연동
-const addColBtn = document.getElementById('add-col-btn');
-if (addColBtn) {
-    addColBtn.onclick = () => {
-        const title = prompt('새 보드 제목을 입력하세요:');
-        if (title && title.trim()) {
-            boardData.push({
-                title: title.trim(),
-                items: [],
-                collapsed: false,
-                archived: false,
-                color: '#94a3b8'
-            });
-            saveToServer();
+// 4. [도움 함수] 카드 위치 계산 (전역 범위로 이동)
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.drag-item:not(.dragging)')];
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
         }
-    };
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
+// 5. 전역 UI 이벤트
+document.getElementById('archive-toggle-btn').onclick = () => {
+    document.getElementById('archive-section').classList.toggle('open');
+};
 
-
+document.getElementById('add-col-btn').onclick = () => {
+    const title = prompt('새 보드 제목:');
+    if (title && title.trim()) {
+        boardData.push({ title: title.trim(), items: [], collapsed: false, archived: false, color: '#94a3b8' });
+        saveToServer();
+    }
+};
