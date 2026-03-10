@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팀 업무 현황판</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="app-header">
+        <h1 class="main-title">업무 현황판</h1>
+        <div class="header-controls">
+            <button class="primary-btn" id="add-col-btn">+ 새 업무 보드 추가</button>
+        </div>
+    </header>
+
+    <main class="drag-container">
+        <ul class="drag-list" id="main-drag-list"></ul>
+    </main>
+
+    <section class="archive-section" id="archive-section">
+        <div class="archive-header" id="archive-toggle-btn">
+            <span>📦 업무 완료함 (클릭하여 열기/닫기)</span>
+            <span id="archive-count" class="badge">0</span>
+        </div>
+        <div class="archive-content">
+            <ul class="drag-list" id="archive-drag-list"></ul>
+        </div>
+    </section>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
