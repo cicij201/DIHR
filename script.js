@@ -164,3 +164,64 @@ if (addColBtn) {
         }
     };
 }
+// --- [3단계 핵심] 이력 추가 함수 ---
+function addHistory(item, message) {
+    if (!item.history) item.history = [];
+    item.history.push({
+        date: new Date().toLocaleString(),
+        msg: message
+    });
+}
+
+// --- renderDOM 내부 카드 클릭 이벤트 ---
+itemEl.onclick = (e) => {
+    // 버튼이나 텍스트 편집 클릭 시엔 모달 안 띄움
+    if (e.target.classList.contains('item-del-btn') || e.target.classList.contains('item-text')) return;
+    
+    openModal(colIdx, itemIdx);
+};
+
+// --- 모달 열기 및 저장 로직 ---
+let currentTarget = null; // 현재 수정 중인 카드 정보 저장
+
+function openModal(cIdx, iIdx) {
+    const item = boardData[cIdx].items[iIdx];
+    currentTarget = { cIdx, iIdx };
+    
+    document.getElementById('modal-title').value = item.text;
+    document.getElementById('modal-desc').value = item.desc || '';
+    
+    // 이력 화면에 그리기
+    const histList = document.getElementById('history-list');
+    histList.innerHTML = (item.history || []).map(h => 
+        `<li><strong>[${h.date}]</strong> ${h.msg}</li>`
+    ).join('');
+    
+    document.getElementById('item-modal').style.display = 'flex';
+}
+
+// 모달 저장 버튼
+document.getElementById('modal-save-btn').onclick = () => {
+    const { cIdx, iIdx } = currentTarget;
+    const item = boardData[cIdx].items[iIdx];
+    
+    item.text = document.getElementById('modal-title').value;
+    item.desc = document.getElementById('modal-desc').value;
+    
+    addHistory(item, "상세 정보 수정됨");
+    saveToServer();
+    document.getElementById('item-modal').style.display = 'none';
+};
+
+// --- [핵심] 카드 드롭 시 이력 기록 ---
+// listEl.ondrop 내부 로직 수정
+if (type === 'item') {
+    const info = JSON.parse(e.dataTransfer.getData('info'));
+    const movingItem = boardData[info.fCol].items.splice(info.fIdx, 1)[0];
+    
+    // 이력 추가: 어느 보드로 옮겨졌는지 기록
+    const targetColName = boardData[colIdx].title;
+    addHistory(movingItem, `'${targetColName}' 보드로 이동됨`);
+    
+    // (기존 삽입 로직 동일...)
+}
